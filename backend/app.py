@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
-from openai import OpenAI
+from agents import PrimaryAssistant, UserAgent, DietaryAssessmentAgent
 
 # Load environment variables
 load_dotenv()
@@ -11,36 +11,56 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+# Initialize agents
+primary_assistant = PrimaryAssistant()
+user_agent = UserAgent()
+dietary_agent = DietaryAssessmentAgent()
 
 @app.route('/chat', methods=['POST'])
 def chat():
+    """Handle general chat messages using the primary assistant."""
     try:
         data = request.get_json()
         if not data or 'message' not in data:
             return jsonify({'error': 'No message provided'}), 400
 
-        user_message = data['message']
-        
-        # Get response from OpenAI
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful AI assistant."},
-                {"role": "user", "content": user_message}
-            ]
-        )
-        
-        return jsonify({
-            'response': response.choices[0].message.content
-        })
+        response = primary_assistant.process(data)
+        return jsonify(response)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/user', methods=['POST'])
+def user():
+    """Handle user-related queries using the user agent."""
+    try:
+        data = request.get_json()
+        if not data or 'message' not in data:
+            return jsonify({'error': 'No message provided'}), 400
+
+        response = user_agent.process(data)
+        return jsonify(response)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/dietary', methods=['POST'])
+def dietary():
+    """Handle dietary assessment queries using the dietary agent."""
+    try:
+        data = request.get_json()
+        if not data or 'message' not in data:
+            return jsonify({'error': 'No message provided'}), 400
+
+        response = dietary_agent.process(data)
+        return jsonify(response)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @app.route('/health', methods=['GET'])
 def health_check():
+    """Health check endpoint."""
     return jsonify({'status': 'healthy'})
 
 if __name__ == '__main__':
