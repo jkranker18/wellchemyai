@@ -13,7 +13,13 @@ class BaseAgent(ABC):
     """Base class for all AI agents in the Wellchemy platform."""
     
     def __init__(self):
-        self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY not found in environment variables")
+        self.client = OpenAI(
+            api_key=api_key,
+            base_url="https://api.openai.com/v1"
+        )
         self.model = "gpt-3.5-turbo"
     
     @abstractmethod
@@ -51,8 +57,12 @@ class BaseAgent(ABC):
 
     def get_completion(self, messages):
         """Get a completion from OpenAI."""
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages
-        )
-        return response.choices[0].message.content 
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            print(f"Error getting completion: {str(e)}")
+            raise 
