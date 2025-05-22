@@ -1,6 +1,4 @@
 from typing import Dict, Any
-from openai import OpenAI
-import os
 from .base_agent import BaseAgent
 
 class UserAgent(BaseAgent):
@@ -9,7 +7,6 @@ class UserAgent(BaseAgent):
     def __init__(self):
         """Initialize the User Agent with GPT-3.5-turbo."""
         super().__init__()
-        self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
         self.system_message = """You are the user management assistant for Wellchemy. 
         Your role is to handle user-related queries, including account management, 
         login issues, and user preferences. Be helpful and professional while ensuring 

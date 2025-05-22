@@ -1,6 +1,4 @@
 from typing import Dict, Any
-from openai import OpenAI
-import os
 from .base_agent import BaseAgent
 
 class DietaryAssessmentAgent(BaseAgent):
@@ -9,7 +7,6 @@ class DietaryAssessmentAgent(BaseAgent):
     def __init__(self):
         """Initialize the Dietary Assessment Agent with GPT-3.5-turbo."""
         super().__init__()
-        self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
         self.system_prompt = """You are the dietary assessment specialist for Wellchemy.
 Your role is to:
 1. Conduct comprehensive dietary assessments

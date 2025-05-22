@@ -1,5 +1,13 @@
-import React from 'react';
+'use client';
 
+import React, { useState } from 'react';
+import { api } from '@/services/api';
+
+interface Message {
+  id: number;
+  text: string;
+  isUser: boolean;
+}
 
 // Placeholder components for the chat UI
 const Header = () => (
@@ -7,7 +15,6 @@ const Header = () => (
     <h1 className="text-2xl font-bold">Wellchemy</h1>
   </header>
 );
-
 
 const LeftRail = () => (
   <div className="bg-green-100 p-4 h-full">
@@ -20,35 +27,105 @@ const LeftRail = () => (
   </div>
 );
 
+const ChatArea = ({ messages, onSendMessage }: { messages: Message[], onSendMessage: (text: string) => void }) => {
+  const [inputText, setInputText] = useState('');
 
-const ChatArea = () => (
-  <div className="flex flex-col h-full">
-    <div className="flex-1 p-4 overflow-y-auto bg-green-50">
-      <div className="mb-4 p-3 bg-green-200 rounded-lg">Hello! How can I help you today?</div>
-      <div className="mb-4 p-3 bg-green-200 rounded-lg">I'm here to assist with your dietary needs.</div>
-    </div>
-    <div className="p-4 border-t border-green-300">
-      <div className="flex">
-        <input
-          type="text"
-          placeholder="Type your message..."
-          className="flex-1 p-2 border border-green-300 rounded-l"
-        />
-        <button className="bg-green-800 text-white p-2 rounded-r">Send</button>
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputText.trim()) {
+      onSendMessage(inputText);
+      setInputText('');
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 p-4 overflow-y-auto bg-green-50">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`mb-4 p-3 rounded-lg ${
+              message.isUser ? 'bg-green-300 ml-auto' : 'bg-green-200'
+            } max-w-[80%]`}
+          >
+            {message.text}
+          </div>
+        ))}
       </div>
+      <form onSubmit={handleSubmit} className="p-4 border-t border-green-300">
+        <div className="flex">
+          <input
+            type="text"
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            placeholder="Type your message..."
+            className="flex-1 p-2 border border-green-300 rounded-l"
+          />
+          <button type="submit" className="bg-green-800 text-white p-2 rounded-r">
+            Send
+          </button>
+        </div>
+      </form>
     </div>
-  </div>
-);
-
+  );
+};
 
 const Footer = () => (
   <footer className="bg-green-800 text-white p-4 text-center">
-    <p>© 2023 Wellchemy. All rights reserved.</p>
+    <p>© 2024 Wellchemy. All rights reserved.</p>
   </footer>
 );
 
-
 export default function Home() {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 1,
+      text: "Hello! I'm your Wellchemy AI assistant. How can I help you today?",
+      isUser: false,
+    },
+  ]);
+
+  const handleSendMessage = async (text: string) => {
+    // Add user message
+    const userMessage: Message = {
+      id: messages.length + 1,
+      text,
+      isUser: true,
+    };
+    setMessages((prev) => [...prev, userMessage]);
+
+    try {
+      // Send message to backend
+      const response = await api.chat(text);
+      
+      // Add AI response
+      if (response.success) {
+        const aiMessage: Message = {
+          id: messages.length + 2,
+          text: response.data.response,
+          isUser: false,
+        };
+        setMessages((prev) => [...prev, aiMessage]);
+      } else {
+        // Handle error
+        const errorMessage: Message = {
+          id: messages.length + 2,
+          text: "Sorry, I encountered an error. Please try again.",
+          isUser: false,
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      const errorMessage: Message = {
+        id: messages.length + 2,
+        text: "Sorry, I encountered an error. Please try again.",
+        isUser: false,
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen">
       <Header />
@@ -57,7 +134,7 @@ export default function Home() {
           <LeftRail />
         </div>
         <div className="w-3/4">
-          <ChatArea />
+          <ChatArea messages={messages} onSendMessage={handleSendMessage} />
         </div>
       </div>
       <Footer />
