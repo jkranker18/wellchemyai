@@ -1,7 +1,6 @@
 import os
 from typing import Dict, Any
 from .base_agent import BaseAgent
-from PyPDF2 import PdfReader
 
 class DietaryAssessmentAgent(BaseAgent):
     """Agent to guide users through the ACLM diet screener and compute their dietary score."""
@@ -12,7 +11,7 @@ class DietaryAssessmentAgent(BaseAgent):
 You are the dietary assessment specialist for Wellchemy. Your job is to administer the ACLM Diet Screener (Version 1).
 
 Instructions:
-- Ask users the dietary frequency questions from the ACLM Diet Screener one by one.
+- Ask users the dietary frequency questions from the ACLM Diet Screener PDF one by one.
 - After each user answer, ask the next question in order.
 - At the end of all questions, convert the responses into scores using the ACLM Diet Scoring Summary:
     - Never = 0 times/week
@@ -26,22 +25,29 @@ Instructions:
 
 Always use a supportive, clear tone. Clarify if the user provides an unclear response.
 """
-        self.questions = [
-            "Over the last four weeks, how often did you eat or drink the following items?",
-            "Whole grains (e.g., brown rice, whole wheat bread, oatmeal)?",
+        self.questions = self._load_questions_from_pdf()
+        self.state = {}  # user_id -> {"index": int, "answers": [float]}
+
+    def _load_questions_from_pdf(self) -> list:
+        """
+        Return hardcoded dietary questions for the assessment.
+        """
+        lead_in = "Over the last four weeks, how often did you eat or drink the following items?"
+        questions = [
+            f"{lead_in} Whole grains (e.g., brown rice, whole wheat bread, oatmeal)?",
             "Vegetables (excluding potatoes)?",
             "Fruits?",
-            "Legumes (e.g., beans, lentils, chickpeas)?",
+            "Legumes (beans, lentils, chickpeas)?",
             "Nuts and seeds?",
+            "Processed meats (e.g., bacon, sausage, deli meats)?",
+            "Red meat (beef, pork, lamb)?",
             "Fish and seafood?",
             "Dairy products?",
             "Eggs?",
-            "Red meat (e.g., beef, pork, lamb)?",
-            "Processed meat (e.g., bacon, sausage, deli meats)?",
-            "Added sugars (e.g., candy, cookies, soda)?",
+            "Added sugars (e.g., candy, cookies, sugary drinks)?",
             "Fried foods?"
         ]
-        self.state = {}  # user_id -> {"index": int, "answers": [float]}
+        return questions
 
     def _convert_to_score(self, answer: str) -> float:
         """Maps user response text to a numeric score."""
