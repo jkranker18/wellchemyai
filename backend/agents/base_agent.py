@@ -4,6 +4,7 @@ from openai import OpenAI
 import os
 from dotenv import load_dotenv
 from pathlib import Path
+import httpx
 
 # Explicitly load .env file from the backend directory
 env_path = Path(__file__).parent.parent / '.env'
@@ -16,9 +17,11 @@ class BaseAgent(ABC):
         api_key = os.getenv('OPENAI_API_KEY')
         if not api_key:
             raise ValueError("OPENAI_API_KEY not found in environment variables")
+        # Use a custom httpx client without 'proxies'
+        httpx_client = httpx.Client()
         self.client = OpenAI(
             api_key=api_key,
-            base_url="https://api.openai.com/v1"
+            http_client=httpx_client
         )
         self.model = "gpt-3.5-turbo"
     
