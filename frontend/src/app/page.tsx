@@ -19,8 +19,8 @@ const Header = () => (
   <header className="bg-gradient-to-r from-green-600 to-green-800 text-white p-4 shadow-lg sticky top-0 z-10">
     <div className="container mx-auto flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <div className="bg-white/20 p-2 rounded-full">
-          <img src="/Wellchemy white apple.png" alt="Wellchemy Logo" className="h-5 w-5" />
+        <div>
+          <img src="/Wellchemy white apple.png" alt="Wellchemy Logo" className="h-8 w-8" />
         </div>
         <div>
           <h1 className="text-2xl font-bold">Wellchemy</h1>
