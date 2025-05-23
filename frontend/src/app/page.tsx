@@ -150,7 +150,7 @@ const ChatArea = ({ messages, onSendMessage }: { messages: Message[]; onSendMess
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder="Type your message..."
-              className="flex-1 p-3 border border-gray-300 rounded-full focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 shadow-sm"
+              className="flex-1 p-3 border border-gray-300 rounded-full focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 shadow-sm text-black"
             />
             <Button
               type="submit"
