@@ -1,73 +1,98 @@
+import os
 from typing import Dict, Any
 from .base_agent import BaseAgent
+from PyPDF2 import PdfReader
 
 class DietaryAssessmentAgent(BaseAgent):
-    """Agent responsible for conducting dietary assessments and providing recommendations."""
-    
-    def __init__(self):
-        """Initialize the Dietary Assessment Agent with GPT-3.5-turbo."""
-        super().__init__()
-        self.system_prompt = """You are the dietary assessment specialist for Wellchemy.
-Your role is to:
-1. Conduct comprehensive dietary assessments
-2. Analyze eating patterns and habits
-3. Identify potential nutritional gaps
-4. Provide personalized dietary recommendations
-5. Suggest specific foods and meal plans
-6. Monitor progress and adjust recommendations
+    """Agent to guide users through the ACLM diet screener and compute their dietary score."""
 
-Always base your recommendations on scientific evidence and consider the user's:
-- Current health status
-- Dietary restrictions
-- Cultural preferences
-- Lifestyle factors
-- Personal goals"""
-    
+    def __init__(self):
+        super().__init__()
+        self.system_prompt = """
+You are the dietary assessment specialist for Wellchemy. Your job is to administer the ACLM Diet Screener (Version 1).
+
+Instructions:
+- Ask users the dietary frequency questions from the ACLM Diet Screener one by one.
+- After each user answer, ask the next question in order.
+- At the end of all questions, convert the responses into scores using the ACLM Diet Scoring Summary:
+    - Never = 0 times/week
+    - Less than 1x/week = 0.5 times/week
+    - 1-3x/week = 2 times/week
+    - 4-6x/week = 5 times/week
+    - 1-2x/day = 10.5 times/week
+    - More than 3x/day = 21 times/week
+- Sum all scores to compute the user's total dietary frequency score.
+- Provide a clear and friendly summary of their results at the end.
+
+Always use a supportive, clear tone. Clarify if the user provides an unclear response.
+"""
+        self.questions = [
+            "Over the last four weeks, how often did you eat or drink the following items?",
+            "Whole grains (e.g., brown rice, whole wheat bread, oatmeal)?",
+            "Vegetables (excluding potatoes)?",
+            "Fruits?",
+            "Legumes (e.g., beans, lentils, chickpeas)?",
+            "Nuts and seeds?",
+            "Fish and seafood?",
+            "Dairy products?",
+            "Eggs?",
+            "Red meat (e.g., beef, pork, lamb)?",
+            "Processed meat (e.g., bacon, sausage, deli meats)?",
+            "Added sugars (e.g., candy, cookies, soda)?",
+            "Fried foods?"
+        ]
+        self.state = {}  # user_id -> {"index": int, "answers": [float]}
+
+    def _convert_to_score(self, answer: str) -> float:
+        """Maps user response text to a numeric score."""
+        score_map = {
+            "never": 0,
+            "less than 1x/week": 0.5,
+            "1-3x/week": 2,
+            "4-6x/week": 5,
+            "1-2x/day": 10.5,
+            "more than 3x/day": 21
+        }
+        normalized = answer.strip().lower()
+        for key in score_map:
+            if key in normalized:
+                return score_map[key]
+        return 0  # fallback for unrecognized input
+
     def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Process dietary assessment input and generate recommendations.
-        
-        Args:
-            input_data: Dictionary containing the user's dietary information and context
-            
-        Returns:
-            Dictionary containing the assessment results and recommendations
-        """
-        try:
-            user_message = input_data.get('message', '')
-            dietary_data = input_data.get('dietary_data', {})
-            health_context = input_data.get('health_context', {})
-            
-            if not user_message:
-                return self._format_response(
-                    success=False,
-                    message="No message provided"
-                )
-            
-            # Combine all context into the system prompt
-            full_system_prompt = self.system_prompt
-            if dietary_data:
-                full_system_prompt += f"\n\nDietary Data: {dietary_data}"
-            if health_context:
-                full_system_prompt += f"\n\nHealth Context: {health_context}"
-            
-            # Get response from OpenAI
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": full_system_prompt},
-                    {"role": "user", "content": user_message}
-                ]
-            )
-            
-            return self._format_response(
-                success=True,
-                message="Assessment completed successfully",
-                data={"response": response.choices[0].message.content}
-            )
-            
-        except Exception as e:
-            return self._format_response(
-                success=False,
-                message=f"Error processing request: {str(e)}"
-            ) 
+        """Drives the assessment session with scoring logic."""
+        user_id = input_data.get("user_id", "default")
+        message = input_data.get("message", "").strip()
+
+        if user_id not in self.state:
+            self.state[user_id] = {"index": 0, "answers": []}
+            return self._format_response(True, "Starting diet assessment", {
+                "response": f"{self.questions[0]}"
+            })
+
+        user_state = self.state[user_id]
+
+        # Store the last answer
+        if user_state["index"] < len(self.questions):
+            score = self._convert_to_score(message)
+            user_state["answers"].append(score)
+            user_state["index"] += 1
+
+        # Finish if last question answered
+        if user_state["index"] >= len(self.questions):
+            total_score = sum(user_state["answers"])
+            max_score = len(user_state["answers"]) * 21
+            percent = (total_score / max_score) * 100 if max_score else 0
+            del self.state[user_id]
+
+            return self._format_response(True, "Assessment complete", {
+                "total_score": round(total_score, 1),
+                "max_score": max_score,
+                "percent": round(percent, 1),
+                "response": f"Your dietary frequency score is {round(total_score,1)} out of {max_score} "
+                            f"({round(percent,1)}%). Thank you for completing the assessment!"
+            })
+
+        # Ask the next question
+        next_question = self.questions[user_state["index"]]
+        return self._format_response(True, "Next question", {"response": next_question})

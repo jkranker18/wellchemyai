@@ -113,30 +113,30 @@ const ChatArea = ({ messages, onSendMessage }: { messages: Message[]; onSendMess
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-6">
-        <div className="max-w-3xl mx-auto space-y-8">
+      <ScrollArea className="flex-1 p-3 sm:p-4">
+        <div className="max-w-xl mx-auto space-y-4 sm:space-y-6">
           {messages.map((message) => (
             <div
               key={message.id}
               className={`flex ${message.isUser ? "justify-end" : "justify-start"}`}
             >
               {!message.isUser && (
-                <div className="w-10 h-10 rounded-full bg-[#2A6657] flex items-center justify-center text-white mr-3 mt-1 flex-shrink-0 shadow-md">
-                  <Sparkles className="h-5 w-5" />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#2A6657] flex items-center justify-center text-white mr-2 sm:mr-3 mt-1 flex-shrink-0 shadow-md">
+                  <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
               )}
               <div
-                className={`max-w-[80%] rounded-2xl px-6 py-4 ${
+                className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-4 sm:px-6 py-3 sm:py-4 ${
                   message.isUser
                     ? "bg-gradient-to-r from-[#2A6657] to-[#1d4a3e] text-white rounded-br-none shadow-lg"
                     : "bg-white/80 backdrop-blur-md text-[#17322a] rounded-bl-none border border-[#e6d2b3]/40 shadow-md"
                 }`}
               >
-                <p className="text-base leading-relaxed">{message.text}</p>
+                <p className="text-sm sm:text-base leading-relaxed">{message.text}</p>
               </div>
               {message.isUser && (
-                <div className="w-10 h-10 rounded-full bg-[#f7eee3] flex items-center justify-center text-[#2A6657] ml-3 mt-1 flex-shrink-0 shadow-md border border-[#e6d2b3]/40">
-                  <div className="w-5 h-5 rounded-full bg-[#2A6657]"></div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#f7eee3] flex items-center justify-center text-[#2A6657] ml-2 sm:ml-3 mt-1 flex-shrink-0 shadow-md border border-[#e6d2b3]/40">
+                  <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#2A6657]"></div>
                 </div>
               )}
             </div>
@@ -145,25 +145,25 @@ const ChatArea = ({ messages, onSendMessage }: { messages: Message[]; onSendMess
         </div>
       </ScrollArea>
 
-      <form onSubmit={handleSubmit} className="border-t border-[#e6d2b3]/30 bg-white/90 backdrop-blur-md p-5 shadow-lg">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex gap-3 items-center">
+      <form onSubmit={handleSubmit} className="border-t border-[#e6d2b3]/30 bg-white/90 backdrop-blur-md p-3 sm:p-4 shadow-lg">
+        <div className="max-w-xl mx-auto">
+          <div className="flex gap-2 sm:gap-3 items-center">
             <Input
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder="Type your message..."
-              className="flex-1 p-4 border border-[#d3b787]/50 rounded-full focus:outline-none focus:border-[#2A6657] focus:ring-1 focus:ring-[#2A6657] shadow-md text-[#11211c] bg-white/80 backdrop-blur-sm font-sans text-base"
+              className="flex-1 p-3 sm:p-4 border border-[#d3b787]/50 rounded-full focus:outline-none focus:border-[#2A6657] focus:ring-1 focus:ring-[#2A6657] shadow-md text-[#11211c] bg-white/80 backdrop-blur-sm font-sans text-sm sm:text-base"
             />
             <Button
               type="submit"
-              className="bg-[#2A6657] text-white px-6 py-6 rounded-full hover:bg-[#1d4a3e] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#2A6657]/50 focus:ring-offset-2 shadow-lg"
+              className="bg-[#2A6657] text-white p-3 sm:p-4 rounded-full hover:bg-[#1d4a3e] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#2A6657]/50 focus:ring-offset-2 shadow-lg"
             >
-              <Send className="h-5 w-5" />
+              <Send className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="sr-only">Send</span>
             </Button>
           </div>
-          <div className="mt-3 text-sm text-center text-[#17322a] font-sans">
+          <div className="mt-2 sm:mt-3 text-xs sm:text-sm text-center text-[#17322a] font-sans">
             Ask about nutrition, wellness plans, or dietary recommendations
           </div>
         </div>
@@ -232,10 +232,10 @@ export default function Home() {
     <div className="flex flex-col h-screen bg-[#f0f9f0]">
       <Header />
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-1/4 hidden md:block">
+        <div className="w-1/4 min-w-[250px] hidden xl:block">
           <LeftRail />
         </div>
-        <div className="w-full md:w-3/4">
+        <div className="w-full xl:w-3/4">
           <ChatArea messages={messages} onSendMessage={handleSendMessage} />
         </div>
       </div>
