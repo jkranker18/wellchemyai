@@ -20,7 +20,7 @@ const Header = () => (
     <div className="container mx-auto flex items-center justify-between">
       <div className="flex items-center gap-2">
         <div className="bg-white/20 p-2 rounded-full">
-          <Leaf className="h-5 w-5 text-green-100" />
+          <img src="/Wellchemy white apple.png" alt="Wellchemy Logo" className="h-5 w-5" />
         </div>
         <div>
           <h1 className="text-2xl font-bold">Wellchemy</h1>
