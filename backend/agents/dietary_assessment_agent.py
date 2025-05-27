@@ -12,6 +12,33 @@ class DietaryAssessmentAgent(BaseAgent):
 You are the dietary assessment specialist for Wellchemy. You guide users through the ACLM Diet Screener and compute scores.
 """
         self.questions = self._load_questions_from_pdf()
+        self.examples = {
+            "Fruit": "e.g., apples, bananas, pears",
+            "Whole grains or whole grain products": "e.g., quinoa, millet, barley",
+            "Leafy green vegetables": "e.g., spinach, kale, romaine",
+            "Other vegetables or vegetable dishes": "e.g., carrots, broccoli, zucchini",
+            "Beans/legumes or products made from them": "e.g., black beans, chickpeas, lentils",
+            "Nuts, nut butters, seeds, avocado, or coconut": "e.g., almonds, walnuts, chia seeds",
+            "Meat or poultry or meat-based dishes": "e.g., chicken, beef, pork",
+            "Fish or shellfish or seafood-based dishes": "e.g., salmon, shrimp, tuna",
+            "Eggs or egg-based dishes": "e.g., scrambled eggs, omelets",
+            "Dairy milk": "e.g., whole milk, skim milk",
+            "Other dairy foods": "e.g., cheese, yogurt",
+            "Plant-based meat/mock meat or dairy alternatives": "e.g., tofu, soy milk",
+            "Packaged/prepared foods or frozen meals": "e.g., TV dinners, microwaveable meals",
+            "Restaurant/takeout foods": "e.g., fast food, pizza",
+            "Fast foods": "e.g., burgers, fries",
+            "Packaged bars, shakes, or powders": "e.g., protein bars, meal shakes",
+            "Salty snacks or foods with added salt": "e.g., chips, pretzels",
+            "Sweetened foods or foods with added sugar": "e.g., cookies, cake",
+            "Fried foods or foods with added butter, fats, or oil": "e.g., fried chicken, tempura",
+            "Water or plain herbal beverages": "e.g., water, chamomile tea",
+            "Non-dairy milk": "e.g., almond milk, oat milk",
+            "100% juice (fruit or vegetable)": "e.g., orange juice, beet juice",
+            "Beverages with added sugars/sweeteners": "e.g., soda, sweetened iced tea",
+            "Coffee or other caffeinated beverages": "e.g., coffee, energy drinks",
+            "Alcoholic beverages": "e.g., beer, wine, whiskey"
+        }
         self.state = {}  # user_id -> {"index": int, "answers": Dict[str, float]}
 
     def _load_questions_from_pdf(self) -> list:
@@ -90,6 +117,17 @@ You are the dietary assessment specialist for Wellchemy. You guide users through
         index = user_state["index"]
 
         if index < len(self.questions):
+            question_key = self.questions[index]["question"]
+            # Handle clarification request
+            if any(kw in message.lower() for kw in ["example", "what is", "explain", "what's that", "huh", "can you give me an example"]):
+                example_text = self.examples.get(question_key)
+                if example_text:
+                    clarification_response = self._format_response(True, "Clarification", {
+                        "response": f"Some examples of {question_key.lower()} include: {example_text}"
+                    })
+                    # Don't increment index, just return the clarification
+                    return clarification_response
+
             score = self._convert_to_score(message)
             question_key = self.questions[index]["question"]
             user_state["answers"][question_key] = score
@@ -136,18 +174,15 @@ You are the dietary assessment specialist for Wellchemy. You guide users through
 
             del self.state[user_id]
 
-            return self._format_response(True, "Assessment complete", {
-                "total_score": round(total_score, 1),
+            response = {
+                "total_score": total_score,
                 "max_score": max_score,
                 "percent": percent,
                 "plant_food_score": plant_food_score,
                 "water_score": water_score,
-                "response": (
-                    f"Assessment complete!\n"
-                    f"🌿 Whole & Plant Food Frequency Score: {plant_food_score}%\n"
-                    f"💧 Water & Herbal Beverages Score: {water_score}%"
-                )
-            })
+                "response": f"Assessment complete!\n\nYour total score is {total_score} out of {max_score} ({percent}%).\n\nPlant Food Score: {plant_food_score}\nWater Score: {water_score}"
+            }
+            return self._format_response(True, "Assessment complete", response)
 
         next_q = self.questions[user_state["index"]]
         return self._format_response(True, "Next question", {
