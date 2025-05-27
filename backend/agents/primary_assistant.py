@@ -2,6 +2,7 @@ from typing import Dict, Any
 from .base_agent import BaseAgent
 from .dietary_assessment_agent import DietaryAssessmentAgent
 from .user_agent import UserAgent
+from .eligibility_agent import EligibilityAgent
 
 class PrimaryAssistant(BaseAgent):
     """Primary AI assistant that routes requests to specialized agents as needed."""
@@ -13,9 +14,10 @@ Your job is to help users and delegate specific tasks to other expert agents whe
 Be friendly, helpful, and efficient."""
         self.diet_agent = DietaryAssessmentAgent()
         self.user_agent = UserAgent()
+        self.eligibility_agent = EligibilityAgent()
 
         # Track which agent is currently handling each user
-        self.user_sessions = {}  # user_id -> 'diet', 'user', or None
+        self.user_sessions = {}  # user_id -> 'diet', 'user', 'eligibility', or None
 
     def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
         user_message = data.get('message', '')
@@ -28,6 +30,12 @@ Be friendly, helpful, and efficient."""
             response = self.diet_agent.process({"message": user_message, "user_id": user_id})
             if response.get("message") == "Assessment complete":
                 self.user_sessions.pop(user_id, None)  # reset session
+            return response
+
+        if current == 'eligibility':
+            response = self.eligibility_agent.process({"message": user_message, "user_id": user_id})
+            if response.get("message") == "Eligibility assessment complete":
+                self.user_sessions.pop(user_id, None)
             return response
 
         if not user_id:
@@ -51,6 +59,11 @@ Be friendly, helpful, and efficient."""
         if self._is_user_question(user_message):
             return self.user_agent.process({"message": user_message, "username": user_id})
 
+        # ✅ Eligibility
+        if self._is_eligibility_request(user_message):
+            self.user_sessions[user_id] = 'eligibility'
+            return self.eligibility_agent.process({"message": "", "user_id": user_id})
+
         # 🤖 Default assistant reply
         messages = [
             {"role": "system", "content": self.system_message},
@@ -69,6 +82,10 @@ Be friendly, helpful, and efficient."""
 
     def _is_user_question(self, message: str) -> bool:
         keywords = ['login', 'log in', 'sign up', 'register', 'onboard', 'create account', 'account']
+        return any(word in message.lower() for word in keywords)
+
+    def _is_eligibility_request(self, message: str) -> bool:
+        keywords = ['check eligibility', 'am i eligible', 'program check', 'start eligibility']
         return any(word in message.lower() for word in keywords)
 
     def _looks_like_diet_response(self, message: str) -> bool:
