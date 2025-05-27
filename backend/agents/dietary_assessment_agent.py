@@ -109,8 +109,19 @@ You are the dietary assessment specialist for Wellchemy. You guide users through
 
         if user_id not in self.state:
             self.state[user_id] = {"index": 0, "answers": {}}
+            next_q = self.questions[0]["question"]
+            drink_items = {
+                "Water or plain herbal beverages",
+                "Non-dairy milk",
+                "100% juice (fruit or vegetable)",
+                "Beverages with added sugars/sweeteners",
+                "Coffee or other caffeinated beverages",
+                "Alcoholic beverages",
+                "Dairy milk"
+            }
+            verb = "drink" if next_q in drink_items else "eat"
             return self._format_response(True, "Starting diet assessment", {
-                "response": f"Over the last 4 weeks, how often did you eat or drink: {self.questions[0]['question']}?"
+                "response": f"Over the last 4 weeks, how often did you {verb}: {next_q}?"
             })
 
         user_state = self.state[user_id]
@@ -118,73 +129,101 @@ You are the dietary assessment specialist for Wellchemy. You guide users through
 
         if index < len(self.questions):
             question_key = self.questions[index]["question"]
-            # Handle clarification request
-            if any(kw in message.lower() for kw in ["example", "what is", "explain", "what's that", "huh", "can you give me an example"]):
+
+            if any(kw in message.lower() for kw in [
+                "example", "what is", "explain", "what's that", "huh", "can you give me an example"
+            ]):
                 example_text = self.examples.get(question_key)
                 if example_text:
-                    clarification_response = self._format_response(True, "Clarification", {
+                    return self._format_response(True, "Clarification", {
                         "response": f"Some examples of {question_key.lower()} include: {example_text}"
                     })
-                    # Don't increment index, just return the clarification
-                    return clarification_response
 
             score = self._convert_to_score(message)
-            question_key = self.questions[index]["question"]
             user_state["answers"][question_key] = score
             user_state["index"] += 1
 
-        if user_state["index"] >= len(self.questions):
-            answers = user_state["answers"]
+            if user_state["index"] >= len(self.questions):
+                answers = user_state["answers"]
 
-            whole_plant_foods = {
-                "Fruit", "Leafy green vegetables", "Other vegetables or vegetable dishes",
-                "Whole grains or whole grain products", "Beans/legumes or products made from them",
-                "Nuts, nut butters, seeds, avocado, or coconut"
+                whole_plant_foods = {
+                    "Fruit", "Leafy green vegetables", "Other vegetables or vegetable dishes",
+                    "Whole grains or whole grain products", "Beans/legumes or products made from them",
+                    "Nuts, nut butters, seeds, avocado, or coconut"
+                }
+
+                beverage_items = {
+                    "Water or plain herbal beverages", "Non-dairy milk", "100% juice (fruit or vegetable)",
+                    "Beverages with added sugars/sweeteners", "Coffee or other caffeinated beverages", "Alcoholic beverages"
+                }
+
+                food_items_total = sum(v for k, v in answers.items() if k not in beverage_items)
+                plant_food_total = sum(answers.get(k, 0) for k in whole_plant_foods)
+                beverage_total = sum(answers.get(k, 0) for k in beverage_items)
+
+                plant_food_score = round((plant_food_total / food_items_total) * 100, 1) if food_items_total else 0
+                water_score = round((answers.get("Water or plain herbal beverages", 0) / beverage_total) * 100, 1) if beverage_total else 0
+
+                total_score = sum(answers.values())
+                max_score = len(answers) * 21
+                percent = round((total_score / max_score) * 100, 1) if max_score else 0
+                gdqs_equivalent = (total_score / max_score) * 40 if max_score else 0
+
+                # Determine risk tier based on GDQS-style thresholds
+                if gdqs_equivalent < 15:
+                    risk_level = "high risk"
+                elif gdqs_equivalent < 23:
+                    risk_level = "moderate risk"
+                else:
+                    risk_level = "low risk"
+
+                db = SessionLocal()
+                try:
+                    assessment = DietAssessment(
+                        user_id=user_id,
+                        question_scores=answers,
+                        total_score=total_score,
+                        max_score=max_score,
+                        percent=percent
+                    )
+                    db.add(assessment)
+                    db.commit()
+                finally:
+                    db.close()
+
+                del self.state[user_id]
+
+                response = {
+                    "total_score": round(total_score, 1),
+                    "max_score": max_score,
+                    "percent": round(percent, 1),
+                    "gdqs_equivalent": round(gdqs_equivalent, 1),
+                    "risk_level": risk_level,
+                    "response": (
+                        f"🌿 Whole & Plant Food Frequency Score: {round(percent, 1)}%\n"
+                        f"\n"
+                        f"💧 Water & Herbal Beverages Score: {water_score}%\n"
+                        f"\n"
+                        f"Based on your dietary frequency score of {round(total_score, 1)}, "
+                        f"this equates to a **{risk_level}** dietary pattern using Global Diet Quality Score categories.\n"
+                        f"\n"
+                        f"Now that we know that, we're here to help you make healthier choices."
+                    )
+                }
+                return self._format_response(True, "Assessment complete", response)
+
+            next_q = self.questions[user_state["index"]]["question"]
+            drink_items = {
+                "Water or plain herbal beverages",
+                "Non-dairy milk",
+                "100% juice (fruit or vegetable)",
+                "Beverages with added sugars/sweeteners",
+                "Coffee or other caffeinated beverages",
+                "Alcoholic beverages",
+                "Dairy milk"
             }
+            verb = "drink" if next_q in drink_items else "eat"
+            return self._format_response(True, "Next question", {
+                "response": f"Over the last 4 weeks, how often did you {verb}: {next_q}?"
+            })
 
-            beverage_items = {
-                "Water or plain herbal beverages", "Non-dairy milk", "100% juice (fruit or vegetable)",
-                "Beverages with added sugars/sweeteners", "Coffee or other caffeinated beverages", "Alcoholic beverages"
-            }
-
-            food_items_total = sum(v for k, v in answers.items() if k not in beverage_items)
-            plant_food_total = sum(answers.get(k, 0) for k in whole_plant_foods)
-            beverage_total = sum(answers.get(k, 0) for k in beverage_items)
-
-            plant_food_score = round((plant_food_total / food_items_total) * 100, 1) if food_items_total else 0
-            water_score = round((answers.get("Water or plain herbal beverages", 0) / beverage_total) * 100, 1) if beverage_total else 0
-
-            total_score = sum(answers.values())
-            max_score = len(answers) * 21
-            percent = round((total_score / max_score) * 100, 1) if max_score else 0
-
-            db = SessionLocal()
-            try:
-                assessment = DietAssessment(
-                    user_id=user_id,
-                    question_scores=answers,
-                    total_score=total_score,
-                    max_score=max_score,
-                    percent=percent
-                )
-                db.add(assessment)
-                db.commit()
-            finally:
-                db.close()
-
-            del self.state[user_id]
-
-            response = {
-                "total_score": total_score,
-                "max_score": max_score,
-                "percent": percent,
-                "plant_food_score": plant_food_score,
-                "water_score": water_score,
-                "response": f"Assessment complete!\n\nYour total score is {total_score} out of {max_score} ({percent}%).\n\nPlant Food Score: {plant_food_score}\nWater Score: {water_score}"
-            }
-            return self._format_response(True, "Assessment complete", response)
-
-        next_q = self.questions[user_state["index"]]
-        return self._format_response(True, "Next question", {
-            "response": f"How often did you eat or drink: {next_q['question']}?"
-        })
