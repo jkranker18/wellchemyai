@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Send, MessageSquare, History, Calendar, Leaf, ChevronRight, Sparkles, Apple } from "lucide-react"
+import { Send, MessageSquare, History, Calendar, Leaf, ChevronRight, Sparkles } from "lucide-react"
+import Image from "next/image"
 
 interface Message {
   id: number
@@ -17,20 +18,20 @@ interface Message {
 
 const Header = () => (
   <header className="bg-gradient-to-r from-[#2A6657] to-[#1d4a3e] text-white p-4 shadow-lg sticky top-0 z-10">
-    <div className="container mx-auto flex items-center justify-between">
+    <div className="container mx-auto flex items-center justify-center">
       <div className="flex items-center justify-center gap-3">
-        <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm">
-          <Apple className="h-6 w-6 text-white" />
-        </div>
-        <div>
+        <Image
+          src="/Wellchemy white apple.png"
+          alt="Wellchemy Logo"
+          width={40}
+          height={40}
+          className="object-contain"
+        />
+        <div className="text-center">
           <h1 className="text-2xl font-display font-semibold tracking-tight">Wellchemy</h1>
           <p className="text-sm text-[#f7eee3] font-sans">Your AI Wellness Assistant</p>
         </div>
       </div>
-      <Button variant="ghost" className="text-white hover:bg-white/10 rounded-xl font-sans">
-        <Calendar className="h-5 w-5 mr-2" />
-        My Wellness Plan
-      </Button>
     </div>
   </header>
 )
@@ -188,7 +189,6 @@ export default function Home() {
   ])
 
   const handleSendMessage = async (text: string) => {
-    // Add user message
     const userMessage: Message = {
       id: messages.length + 1,
       text,
@@ -197,10 +197,9 @@ export default function Home() {
     setMessages((prev) => [...prev, userMessage])
 
     try {
-      // Send message to backend
-      const response = await api.chat(text)
+      const userId = localStorage.getItem("user_id")
+      const response = await api.chat(text, userId)
 
-      // Add AI response
       if (response.success) {
         const aiMessage: Message = {
           id: messages.length + 2,
@@ -208,23 +207,30 @@ export default function Home() {
           isUser: false,
         }
         setMessages((prev) => [...prev, aiMessage])
-      } else {
-        // Handle error
-        const errorMessage: Message = {
-          id: messages.length + 2,
-          text: "Sorry, I encountered an error. Please try again.",
-          isUser: false,
+
+        if (response.data?.user_id) {
+          localStorage.setItem("user_id", response.data.user_id)
         }
-        setMessages((prev) => [...prev, errorMessage])
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: messages.length + 2,
+            text: "Sorry, I encountered an error. Please try again.",
+            isUser: false,
+          },
+        ])
       }
     } catch (error) {
       console.error("Error sending message:", error)
-      const errorMessage: Message = {
-        id: messages.length + 2,
-        text: "Sorry, I encountered an error. Please try again.",
-        isUser: false,
-      }
-      setMessages((prev) => [...prev, errorMessage])
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: messages.length + 2,
+          text: "Sorry, I encountered an error. Please try again.",
+          isUser: false,
+        },
+      ])
     }
   }
 
