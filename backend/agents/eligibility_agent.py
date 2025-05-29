@@ -39,7 +39,6 @@ You ask a series of questions to determine if a user qualifies for a program. Th
         self.state = {}  # user_id -> {index, answers, branch, stage}
 
     def _create_guest_user(self) -> int:
-        """Create a guest user and return their ID."""
         db = SessionLocal()
         try:
             print("Creating guest user...")
@@ -68,13 +67,10 @@ You ask a series of questions to determine if a user qualifies for a program. Th
 
             print(f"Processing eligibility request - User ID: {user_id}, Message: {message}")
 
-            # Create a guest user if user_id is "default" or None
             if user_id == "default" or user_id is None:
-                # Check if we already have a guest user in the state
                 if not self.state:
                     user_id = self._create_guest_user()
                 else:
-                    # Use the first guest user's ID
                     user_id = next(iter(self.state.keys()))
 
             if user_id not in self.state:
@@ -92,18 +88,15 @@ You ask a series of questions to determine if a user qualifies for a program. Th
             index = user_state["index"]
             stage = user_state["stage"]
 
-            # Handle clarification
             clarification_keywords = ["example", "what is", "explain", "what's that", "huh"]
             if any(k in message.lower() for k in clarification_keywords):
                 last_q = self._get_last_question(user_state)
                 return self._format_response(True, "Clarification", {"response": f"Sure! Here's that question again: {last_q}"})
 
-            # Save previous answer
             if stage == "initial" and index < len(self.questions):
                 user_state["answers"][self.questions[index]["key"]] = message
                 index += 1
                 user_state["index"] = index
-                # Detect branch
                 if index == 2:
                     provider = user_state["answers"].get("insurance_provider", "").lower()
                     if provider in self.branch_questions:
@@ -155,8 +148,10 @@ You ask a series of questions to determine if a user qualifies for a program. Th
                         db.close()
 
                     del self.state[user_id]
+
+                    readable = "\n".join([f"{k.replace('_', ' ').title()}: {v}" for k, v in answers.items()])
                     return self._format_response(True, "Eligibility assessment complete", {
-                        "response": f"Thanks! We've recorded your information and will contact your provider. Here's what you told us: {answers}"
+                        "response": f"Thanks! We've recorded your information and will contact your provider.  We'll send you a welcome email as soon as you are apporved!\n\nHere is what you told us:\n{readable}"
                     })
                 else:
                     return self._format_response(True, "Next question", {"response": self.unbranch_questions[index]["question"]})
