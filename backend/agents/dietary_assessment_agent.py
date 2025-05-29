@@ -1,9 +1,6 @@
 import os
 from typing import Dict, Any
 from .base_agent import BaseAgent
-from db_connection import SessionLocal
-from models import DietAssessment
-from datetime import datetime
 
 class DietaryAssessmentAgent(BaseAgent):
     def __init__(self):
@@ -177,40 +174,22 @@ You are the dietary assessment specialist for Wellchemy. You guide users through
                 else:
                     risk_level = "low risk"
 
-                db = SessionLocal()
-                try:
-                    assessment = DietAssessment(
-                        user_id=user_id,
-                        question_scores=answers,
-                        total_score=total_score,
-                        max_score=max_score,
-                        percent=percent
-                    )
-                    db.add(assessment)
-                    db.commit()
-                finally:
-                    db.close()
-
                 del self.state[user_id]
 
-                response = {
-                    "total_score": round(total_score, 1),
-                    "max_score": max_score,
-                    "percent": round(percent, 1),
-                    "gdqs_equivalent": round(gdqs_equivalent, 1),
-                    "risk_level": risk_level,
-                    "response": (
-                        f"🌿 Whole & Plant Food Frequency Score: {round(percent, 1)}%\n"
-                        f"\n"
-                        f"💧 Water & Herbal Beverages Score: {water_score}%\n"
-                        f"\n"
-                        f"Based on your dietary frequency score of {round(total_score, 1)}, "
-                        f"this equates to a **{risk_level}** dietary pattern using Global Diet Quality Score categories.\n"
-                        f"\n"
-                        f"Now that we know that, we're here to help you make healthier choices."
-                    )
-                }
-                return self._format_response(True, "Assessment complete", response)
+                assessment_response = (
+                    f"🌿 Whole & Plant Food Frequency Score: {percent}%\n"
+                    f"\n"
+                    f"💧 Water & Herbal Beverages Score: {water_score}%\n"
+                    f"\n"
+                    f"Based on your dietary frequency score of {round(total_score, 1)}, "
+                    f"this equates to a **{risk_level}** dietary pattern using Global Diet Quality Score categories.\n"
+                    f"\n"
+                    f"Now that we know that, we're here to help you make healthier choices."
+                )
+
+                return self._format_response(True, "Assessment complete", {
+                    "response": assessment_response
+                })
 
             next_q = self.questions[user_state["index"]]["question"]
             drink_items = {
