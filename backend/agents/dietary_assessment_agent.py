@@ -177,7 +177,7 @@ You are the dietary assessment specialist for Wellchemy. You guide users through
                 del self.state[user_id]
 
                 assessment_response = (
-                    f"🌿 Whole & Plant Food Frequency Score: {percent}%\n"
+                    f"🌿 Whole & Plant Food Frequency Score: {plant_food_score}%\n"
                     f"\n"
                     f"💧 Water & Herbal Beverages Score: {water_score}%\n"
                     f"\n"
