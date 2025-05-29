@@ -125,7 +125,7 @@ You are the dietary assessment specialist for Wellchemy. You guide users through
                      f"\n"
                     "For example, if you ate fruit once a day, your answer would be 7. "
                     "If you ate fruit twice a day, your answer would be 14.\n\n"
-                    f"Over the last 4 weeks, how many times per week did you {verb}: {next_q}?"
+                    f"Over the last 4 weeks, how many times per week did you {verb}: **{next_q}**?"
                 )
             })
 
@@ -186,14 +186,13 @@ You are the dietary assessment specialist for Wellchemy. You guide users through
                 del self.state[user_id]
 
                 assessment_response = (
-                    f"🌿 Whole & Plant Food Frequency Score: {plant_food_score}%\n"
+                    f"🌿 Whole & Plant Food Frequency Score: **{plant_food_score}%**\n"
                     f"\n"
-                    f"💧 Water & Herbal Beverages Score: {water_score}%\n"
+                    f"💧 Water & Herbal Beverages Score: **{water_score}%**\n"
                     f"\n"
-                    f"Based on your dietary frequency score of {round(total_score, 1)}, "
-                    f"this equates to a **{risk_level}** dietary pattern using Global Diet Quality Score categories.\n"
+                    f"This equates to a **{risk_level}** dietary pattern using Global Diet Quality Score categories.\n"
                     f"\n"
-                    f"Now that we know that, we're here to help you make healthier choices."
+                    f"Now that we know your score, we're here to help you make healthier choices."
                 )
 
                 return self._format_response(True, "Assessment complete", {
@@ -212,6 +211,6 @@ You are the dietary assessment specialist for Wellchemy. You guide users through
             }
             verb = "drink" if next_q in drink_items else "eat"
             return self._format_response(True, "Next question", {
-                "response": f"Over the last 4 weeks, how many times per week did you {verb}: {next_q}?"
+                "response": f"Over the last 4 weeks, how many times per week did you {verb}: **{next_q}**?"
             })
 
