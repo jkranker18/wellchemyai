@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Send, MessageSquare, History, Calendar, Leaf, ChevronRight, Sparkles } from "lucide-react"
 import Image from "next/image"
+import ReactMarkdown from "react-markdown"
 
 interface Message {
   id: number
@@ -133,7 +134,9 @@ const ChatArea = ({ messages, onSendMessage }: { messages: Message[]; onSendMess
                     : "bg-white/80 backdrop-blur-md text-[#17322a] rounded-bl-none border border-[#e6d2b3]/40 shadow-md"
                 }`}
               >
-                <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words">{message.text}</p>
+                <div className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words">
+                  <ReactMarkdown>{message.text}</ReactMarkdown>
+                </div>
               </div>
               {message.isUser && (
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#f7eee3] flex items-center justify-center text-[#2A6657] ml-2 sm:ml-3 mt-1 flex-shrink-0 shadow-md border border-[#e6d2b3]/40">
