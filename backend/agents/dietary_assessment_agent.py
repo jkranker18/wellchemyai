@@ -164,7 +164,8 @@ You are the dietary assessment specialist for Wellchemy. You guide users through
                 total_score = sum(answers.values())
                 max_score = len(answers) * 21
                 percent = round((total_score / max_score) * 100, 1) if max_score else 0
-                gdqs_equivalent = (total_score / max_score) * 40 if max_score else 0
+                # Weight: 75% from whole plant food %, 25% from water %
+                gdqs_equivalent = round((plant_food_score * 0.75 + water_score * 0.25) * 0.4, 1)
 
                 # Determine risk tier based on GDQS-style thresholds
                 if gdqs_equivalent < 15:
