@@ -118,7 +118,15 @@ You are the dietary assessment specialist for Wellchemy. You guide users through
             }
             verb = "drink" if next_q in drink_items else "eat"
             return self._format_response(True, "Starting diet assessment", {
-                "response": f"Over the last 4 weeks, how often did you {verb}: {next_q}?"
+                "response": (
+                    "Let's start the diet assessment! This should only take 3–5 minutes. "
+                    "We'll ask you about your usual diet over the past 4 weeks. "
+                    "Please answer how many times you've eaten or drank the listed items **per week**.\n"
+                     f"\n"
+                    "For example, if you ate fruit once a day, your answer would be 7. "
+                    "If you ate fruit twice a day, your answer would be 14.\n\n"
+                    f"Over the last 4 weeks, how many times per week did you {verb}: {next_q}?"
+                )
             })
 
         user_state = self.state[user_id]
@@ -204,6 +212,6 @@ You are the dietary assessment specialist for Wellchemy. You guide users through
             }
             verb = "drink" if next_q in drink_items else "eat"
             return self._format_response(True, "Next question", {
-                "response": f"Over the last 4 weeks, how often did you {verb}: {next_q}?"
+                "response": f"Over the last 4 weeks, how many times per week did you {verb}: {next_q}?"
             })
 
