@@ -38,9 +38,6 @@ Be friendly, helpful, and efficient."""
                 self.user_sessions.pop(user_id, None)
             return response
 
-        if not user_id:
-            return self.user_agent.process({"message": user_message})
-
         # 🧠 If looks like diet response, keep flow with diet agent
         if self._looks_like_diet_response(user_message):
             self.user_sessions[user_id] = 'diet'
@@ -55,14 +52,18 @@ Be friendly, helpful, and efficient."""
         if self._is_diet_question(user_message):
             return self.diet_agent.process({"message": user_message, "user_id": user_id})
 
-        # 👤 User account
-        if self._is_user_question(user_message):
-            return self.user_agent.process({"message": user_message, "username": user_id})
-
-        # ✅ Eligibility
+        # ✅ Eligibility - check before user_id
         if self._is_eligibility_request(user_message):
             self.user_sessions[user_id] = 'eligibility'
             return self.eligibility_agent.process({"message": "", "user_id": user_id})
+
+        # 👤 User account - only handle actual user-related requests
+        if self._is_user_question(user_message):
+            return self.user_agent.process({"message": user_message, "username": user_id})
+
+        # If no user_id, return default user agent response
+        if not user_id:
+            return self.user_agent.process({"message": user_message})
 
         # 🤖 Default assistant reply
         messages = [
@@ -85,7 +86,7 @@ Be friendly, helpful, and efficient."""
         return any(word in message.lower() for word in keywords)
 
     def _is_eligibility_request(self, message: str) -> bool:
-        keywords = ['check eligibility', 'am i eligible', 'program check', 'start eligibility']
+        keywords = ['check eligibility', 'am i eligible', 'program check', 'start eligibility', 'eligibility']
         return any(word in message.lower() for word in keywords)
 
     def _looks_like_diet_response(self, message: str) -> bool:
