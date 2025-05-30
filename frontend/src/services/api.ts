@@ -5,17 +5,18 @@ export interface ChatResponse {
   message: string;
   data: {
     response: string;
+    user_id?: string;
   };
 }
 
 export const api = {
-  async chat(message: string): Promise<ChatResponse> {
+  async chat(message: string, user_id: string = "default"): Promise<ChatResponse> {
     const response = await fetch(`${API_BASE_URL}/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, user_id }),
     });
     return response.json();
   },

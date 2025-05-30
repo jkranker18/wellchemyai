@@ -200,7 +200,10 @@ export default function Home() {
     setMessages((prev) => [...prev, userMessage])
 
     try {
-      const userId = localStorage.getItem("user_id")
+      let userId = localStorage.getItem("user_id")
+      if (!userId) {
+        userId = "default"  // Use default if no user_id exists
+      }
       const response = await api.chat(text, userId)
 
       if (response.success) {
