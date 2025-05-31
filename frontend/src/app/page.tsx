@@ -18,7 +18,7 @@ interface Message {
 }
 
 const Header = () => (
-  <header className="bg-gradient-to-r from-[#2A6657] to-[#1d4a3e] text-white p-4 shadow-lg sticky top-0 z-10">
+  <header className="bg-gradient-to-r from-[#2A6657] to-[#1d4a3e] text-white p-4 shadow-lg fixed top-0 left-0 right-0 z-50">
     <div className="container mx-auto flex items-center justify-center">
       <div className="flex items-center justify-center gap-3">
         <Image
@@ -105,7 +105,7 @@ const ChatArea = ({ messages, onSendMessage }: { messages: Message[]; onSendMess
   }
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-[#f0f9f0] via-white to-[#f0f9f0]">
+    <div className="flex flex-col h-[calc(100vh-72px)] bg-gradient-to-br from-[#f0f9f0] via-white to-[#f0f9f0]">
       <div className="p-4 border-b border-[#e6d2b3]/30 bg-white/80 backdrop-blur-md">
         <div className="max-w-3xl mx-auto flex items-center gap-3">
           <div className="bg-[#2A6657]/10 p-2.5 rounded-full">
@@ -241,9 +241,9 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[#f0f9f0]">
+    <div className="flex flex-col min-h-screen bg-[#f0f9f0]">
       <Header />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden pt-[72px]">
         <div className="w-1/4 min-w-[250px] hidden xl:block">
           <LeftRail />
         </div>
