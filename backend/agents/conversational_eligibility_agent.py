@@ -219,9 +219,9 @@ Here is the next question you must ask:
         for key in key_labels:
             if key in answers:
                 value = answers[key]
-                lines.append(f"- {key_labels[key]}: {value}")
+                lines.append(f"{key_labels[key]}: {value}")
 
-        return "\n".join(lines)
+        return "\n\n".join(lines)
 
     def _save_and_finish(self, user_id: str, answers: Dict[str, Any]) -> Dict[str, Any]:
         """Save collected eligibility data and finish session."""
@@ -248,9 +248,8 @@ Here is the next question you must ask:
         return self._format_response(True, "Eligibility assessment complete", {
             "response": (
                 f"Thanks! We've recorded your information and will contact your provider for verification.\n"
-                f"Here's what you told us:\n"
-                f"{formatted_answers}\n"
-                f"✅ We'll let you know as soon as you're approved. "
-                f"In the meantime, feel free to ask me anything about your diet, wellness, or health — I'm here to help!"
+                f"Here's what you told us:\n\n"
+                f"{formatted_answers}\n\n"
+                f"✅ We'll let you know as soon as you're approved. In the meantime, feel free to ask me anything about your diet, wellness, or health — I'm here to help!"
             )
         })
