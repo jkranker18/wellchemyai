@@ -1,72 +1,54 @@
-import os
 from typing import Dict, Any
 from .base_agent import BaseAgent
+import json
 
-class DietaryAssessmentAgent(BaseAgent):
+class ConversationalDietaryAssessmentAgent(BaseAgent):
     def __init__(self):
         super().__init__()
-        self.system_prompt = """
-You are the dietary assessment specialist for Wellchemy. You guide users through the ACLM Diet Screener and compute scores.
-"""
-        self.questions = self._load_questions_from_pdf()
-        self.examples = {
-            "Fruit": "e.g., apples, bananas, pears",
-            "Whole grains or whole grain products": "e.g., quinoa, millet, barley",
-            "Leafy green vegetables": "e.g., spinach, kale, romaine",
-            "Other vegetables or vegetable dishes": "e.g., carrots, broccoli, zucchini",
-            "Beans/legumes or products made from them": "e.g., black beans, chickpeas, lentils",
-            "Nuts, nut butters, seeds, avocado, or coconut": "e.g., almonds, walnuts, chia seeds",
-            "Meat or poultry or meat-based dishes": "e.g., chicken, beef, pork",
-            "Fish or shellfish or seafood-based dishes": "e.g., salmon, shrimp, tuna",
-            "Eggs or egg-based dishes": "e.g., scrambled eggs, omelets",
-            "Dairy milk": "e.g., whole milk, skim milk",
-            "Other dairy foods": "e.g., cheese, yogurt",
-            "Plant-based meat/mock meat or dairy alternatives": "e.g., tofu, soy milk",
-            "Packaged/prepared foods or frozen meals": "e.g., TV dinners, microwaveable meals",
-            "Restaurant/takeout foods": "e.g., fast food, pizza",
-            "Fast foods": "e.g., burgers, fries",
-            "Packaged bars, shakes, or powders": "e.g., protein bars, meal shakes",
-            "Salty snacks or foods with added salt": "e.g., chips, pretzels",
-            "Sweetened foods or foods with added sugar": "e.g., cookies, cake",
-            "Fried foods or foods with added butter, fats, or oil": "e.g., fried chicken, tempura",
-            "Water or plain herbal beverages": "e.g., water, chamomile tea",
-            "Non-dairy milk": "e.g., almond milk, oat milk",
-            "100% juice (fruit or vegetable)": "e.g., orange juice, beet juice",
-            "Beverages with added sugars/sweeteners": "e.g., soda, sweetened iced tea",
-            "Coffee or other caffeinated beverages": "e.g., coffee, energy drinks",
-            "Alcoholic beverages": "e.g., beer, wine, whiskey"
-        }
-        self.state = {}  # user_id -> {"index": int, "answers": Dict[str, float]}
 
-    def _load_questions_from_pdf(self) -> list:
-        return [
-            {"question": "Fruit"},
-            {"question": "Leafy green vegetables"},
-            {"question": "Other vegetables or vegetable dishes"},
-            {"question": "Whole grains or whole grain products"},
-            {"question": "Refined grains or refined grain products"},
-            {"question": "Beans/legumes or products made from them"},
-            {"question": "Nuts, nut butters, seeds, avocado, or coconut"},
-            {"question": "Meat or poultry or meat-based dishes"},
-            {"question": "Fish or shellfish or seafood-based dishes"},
-            {"question": "Eggs or egg-based dishes"},
-            {"question": "Dairy milk"},
-            {"question": "Other dairy foods"},
-            {"question": "Plant-based meat/mock meat or dairy alternatives"},
-            {"question": "Packaged/prepared foods or frozen meals"},
-            {"question": "Restaurant/takeout foods"},
-            {"question": "Fast foods"},
-            {"question": "Packaged bars, shakes, or powders"},
-            {"question": "Salty snacks or foods with added salt"},
-            {"question": "Sweetened foods or foods with added sugar"},
-            {"question": "Fried foods or foods with added butter, fats, or oil"},
-            {"question": "Water or plain herbal beverages"},
-            {"question": "Non-dairy milk"},
-            {"question": "100% juice (fruit or vegetable)"},
-            {"question": "Beverages with added sugars/sweeteners"},
-            {"question": "Coffee or other caffeinated beverages"},
-            {"question": "Alcoholic beverages"}
+        self.categories = [
+            "Fruit",
+            "Leafy green vegetables",
+            "Other vegetables or vegetable dishes",
+            "Whole grains or whole grain products",
+            "Refined grains or refined grain products",
+            "Beans/legumes or products made from them",
+            "Nuts, nut butters, seeds, avocado, or coconut",
+            "Meat or poultry or meat-based dishes",
+            "Fish or shellfish or seafood-based dishes",
+            "Eggs or egg-based dishes",
+            "Dairy milk",
+            "Other dairy foods",
+            "Plant-based meat/mock meat or dairy alternatives",
+            "Packaged/prepared foods or frozen meals",
+            "Restaurant/takeout foods",
+            "Fast foods",
+            "Packaged bars, shakes, or powders",
+            "Salty snacks or foods with added salt",
+            "Sweetened foods or foods with added sugar",
+            "Fried foods or foods with added butter, fats, or oil",
+            "Water or plain herbal beverages",
+            "Non-dairy milk",
+            "100% juice (fruit or vegetable)",
+            "Beverages with added sugars/sweeteners",
+            "Coffee or other caffeinated beverages",
+            "Alcoholic beverages"
         ]
+
+        self.state = {}  # user_id -> {answers: {}, collecting: True/False, current_category: int, welcomed: bool}
+
+    def _normalize_frequency(self, freeform_answer: str) -> str:
+        """Use OpenAI to normalize freeform answer to one of 6 categories."""
+        messages = [
+            {"role": "system", "content": "You are a frequency normalizer. Given a user's freeform description of how often they consume a food, convert it into one of: Never, Less than 1x/week, 1-3x/week, 4-6x/week, 1-2x/day, More than 3x/day. Only return the normalized option exactly."},
+            {"role": "user", "content": freeform_answer}
+        ]
+        response = self.client.chat.completions.create(
+            model="gpt-4",
+            messages=messages
+        )
+        normalized = response.choices[0].message.content.strip()
+        return normalized
 
     def _convert_to_score(self, answer: str) -> float:
         normalized = answer.strip().lower()
@@ -83,134 +65,109 @@ You are the dietary assessment specialist for Wellchemy. You guide users through
             if key in normalized:
                 return score_map[key]
 
-        try:
-            value = float(normalized)
-            if value == 0:
-                return 0
-            elif value < 1:
-                return 0.5
-            elif value < 4:
-                return 2
-            elif value < 7:
-                return 5
-            elif value < 15:
-                return 10.5
-            else:
-                return 21
-        except ValueError:
-            return 0
+        return -1  # Indicate invalid input
+
+    def _calculate_scores(self, answers: Dict[str, str]) -> str:
+        numeric_answers = {k: self._convert_to_score(v) for k, v in answers.items()}
+
+        whole_plant_foods = {
+            "Fruit", "Leafy green vegetables", "Other vegetables or vegetable dishes",
+            "Whole grains or whole grain products", "Beans/legumes or products made from them",
+            "Nuts, nut butters, seeds, avocado, or coconut"
+        }
+
+        beverage_items = {
+            "Water or plain herbal beverages", "Non-dairy milk", "100% juice (fruit or vegetable)",
+            "Beverages with added sugars/sweeteners", "Coffee or other caffeinated beverages", "Alcoholic beverages"
+        }
+
+        food_items_total = sum(v for k, v in numeric_answers.items() if v >= 0 and k not in beverage_items)
+        plant_food_total = sum(numeric_answers.get(k, 0) for k in whole_plant_foods)
+        beverage_total = sum(numeric_answers.get(k, 0) for k in beverage_items)
+
+        plant_food_score = round((plant_food_total / food_items_total) * 100, 1) if food_items_total else 0
+        water_score = round((numeric_answers.get("Water or plain herbal beverages", 0) / beverage_total) * 100, 1) if beverage_total else 0
+
+        total_score = sum(v for v in numeric_answers.values() if v >= 0)
+        max_score = len(numeric_answers) * 21
+        percent = round((total_score / max_score) * 100, 1) if max_score else 0
+        gdqs_equivalent = (total_score / max_score) * 40 if max_score else 0
+
+        if gdqs_equivalent < 15:
+            risk_level = "high risk"
+        elif gdqs_equivalent < 23:
+            risk_level = "moderate risk"
+        else:
+            risk_level = "low risk"
+
+        final_message = (
+            f"\n🌿 Whole & Plant Food Frequency Score: {percent}%\n"
+            f"💧 Water & Herbal Beverages Score: {water_score}%\n"
+            f"\nBased on your dietary frequency score of {round(total_score, 1)}, "
+            f"this equates to a **{risk_level}** dietary pattern using Global Diet Quality Score categories.\n"
+            f"\nNow that we know that, we're here to help you make healthier choices!"
+        )
+
+        return final_message
 
     def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         user_id = input_data.get("user_id", "default")
         message = input_data.get("message", "").strip()
 
         if user_id not in self.state:
-            self.state[user_id] = {"index": 0, "answers": {}}
-            next_q = self.questions[0]["question"]
-            drink_items = {
-                "Water or plain herbal beverages",
-                "Non-dairy milk",
-                "100% juice (fruit or vegetable)",
-                "Beverages with added sugars/sweeteners",
-                "Coffee or other caffeinated beverages",
-                "Alcoholic beverages",
-                "Dairy milk"
-            }
-            verb = "drink" if next_q in drink_items else "eat"
-            return self._format_response(True, "Starting diet assessment", {
-                "response": (
-                    "Let's start the diet assessment! This should only take 3–5 minutes. "
-                    "We'll ask you about your usual diet over the past 4 weeks. "
-                    "Please answer how many times you've eaten or drank the listed items **per week**.\n"
-                     f"\n"
-                    "For example, if you ate fruit once a day, your answer would be 7. "
-                    "If you ate fruit twice a day, your answer would be 14.\n\n"
-                    f"Over the last 4 weeks, how many times per week did you {verb}: **{next_q}**?"
-                )
-            })
+            self.state[user_id] = {"answers": {}, "collecting": True, "current_category": 0, "welcomed": False}
 
         user_state = self.state[user_id]
-        index = user_state["index"]
 
-        if index < len(self.questions):
-            question_key = self.questions[index]["question"]
+        if not user_state["collecting"]:
+            return self._format_response(False, "No active session.")
 
-            if any(kw in message.lower() for kw in [
-                "example", "what is", "explain", "what's that", "huh", "can you give me an example"
-            ]):
-                example_text = self.examples.get(question_key)
-                if example_text:
-                    return self._format_response(True, "Clarification", {
-                        "response": f"Some examples of {question_key.lower()} include: {example_text}"
-                    })
+        # Welcome the user if not yet welcomed
+        if not user_state["welcomed"]:
+            user_state["welcomed"] = True
+            welcome_message = (
+                "Welcome to Wellchemy's Diet Assessment! We'll ask about your typical diet over the past 4 weeks.\n"
+                "Please answer using approximate frequency like: Never, Less than 1x/week, 1-3x/week, 4-6x/week, 1-2x/day, More than 3x/day.\n"
+                "Let's get started!\n"
+            )
+            next_category = self.categories[user_state["current_category"]]
+            prompt = (
+                f"Over the past 4 weeks, how often did you consume {next_category}?\n"
+                f"Please answer freely, and I will interpret your answer."
+            )
+            return self._format_response(True, "Continue conversation", {"response": welcome_message + prompt})
 
-            score = self._convert_to_score(message)
-            user_state["answers"][question_key] = score
-            user_state["index"] += 1
+        # Record the user's answer to the current question
+        if message and user_state["current_category"] < len(self.categories):
+            normalized_answer = self._normalize_frequency(message)
+            score = self._convert_to_score(normalized_answer)
 
-            if user_state["index"] >= len(self.questions):
-                answers = user_state["answers"]
-
-                whole_plant_foods = {
-                    "Fruit", "Leafy green vegetables", "Other vegetables or vegetable dishes",
-                    "Whole grains or whole grain products", "Beans/legumes or products made from them",
-                    "Nuts, nut butters, seeds, avocado, or coconut"
-                }
-
-                beverage_items = {
-                    "Water or plain herbal beverages", "Non-dairy milk", "100% juice (fruit or vegetable)",
-                    "Beverages with added sugars/sweeteners", "Coffee or other caffeinated beverages", "Alcoholic beverages"
-                }
-
-                food_items_total = sum(v for k, v in answers.items() if k not in beverage_items)
-                plant_food_total = sum(answers.get(k, 0) for k in whole_plant_foods)
-                beverage_total = sum(answers.get(k, 0) for k in beverage_items)
-
-                plant_food_score = round((plant_food_total / food_items_total) * 100, 1) if food_items_total else 0
-                water_score = round((answers.get("Water or plain herbal beverages", 0) / beverage_total) * 100, 1) if beverage_total else 0
-
-                total_score = sum(answers.values())
-                max_score = len(answers) * 21
-                percent = round((total_score / max_score) * 100, 1) if max_score else 0
-                # Weight: 75% from whole plant food %, 25% from water %
-                gdqs_equivalent = round((plant_food_score * 0.75 + water_score * 0.25) * 0.4, 1)
-
-                # Determine risk tier based on GDQS-style thresholds
-                if gdqs_equivalent < 15:
-                    risk_level = "high risk"
-                elif gdqs_equivalent < 23:
-                    risk_level = "moderate risk"
-                else:
-                    risk_level = "low risk"
-
-                del self.state[user_id]
-
-                assessment_response = (
-                    f"🌿 Whole & Plant Food Frequency Score: **{plant_food_score}%**\n"
-                    f"\n"
-                    f"💧 Water & Herbal Beverages Score: **{water_score}%**\n"
-                    f"\n"
-                    f"This equates to a **{risk_level}** dietary pattern using Global Diet Quality Score categories.\n"
-                    f"\n"
-                    f"Now that we know your score, we're here to help you make healthier choices."
+            if score == -1:
+                # Invalid input
+                next_category = self.categories[user_state["current_category"]]
+                reprompt = (
+                    f"I didn't quite catch that. Please answer using approximate terms like: Never, Less than 1x/week, 1-3x/week, 4-6x/week, 1-2x/day, More than 3x/day.\n"
+                    f"How often did you consume {next_category}?"
                 )
+                return self._format_response(True, "Invalid input", {"response": reprompt})
 
-                return self._format_response(True, "Assessment complete", {
-                    "response": assessment_response
-                })
+            category = self.categories[user_state["current_category"]]
+            user_state["answers"][category] = normalized_answer
+            user_state["current_category"] += 1
 
-            next_q = self.questions[user_state["index"]]["question"]
-            drink_items = {
-                "Water or plain herbal beverages",
-                "Non-dairy milk",
-                "100% juice (fruit or vegetable)",
-                "Beverages with added sugars/sweeteners",
-                "Coffee or other caffeinated beverages",
-                "Alcoholic beverages",
-                "Dairy milk"
-            }
-            verb = "drink" if next_q in drink_items else "eat"
-            return self._format_response(True, "Next question", {
-                "response": f"Over the last 4 weeks, how many times per week did you {verb}: **{next_q}**?"
-            })
+        # Check if all questions are answered
+        if user_state["current_category"] >= len(self.categories):
+            user_state["collecting"] = False
+            final_message = self._calculate_scores(user_state["answers"])
+            del self.state[user_id]
 
+            return self._format_response(True, "Assessment complete", {"response": final_message})
+
+        # Otherwise ask next category
+        next_category = self.categories[user_state["current_category"]]
+        prompt = (
+            f"Over the past 4 weeks, how often did you consume {next_category}?\n"
+            f"Please answer freely, and I will interpret your answer."
+        )
+
+        return self._format_response(True, "Continue conversation", {"response": prompt})
