@@ -1,6 +1,6 @@
 from typing import Dict, Any
 from .base_agent import BaseAgent
-from .dietary_assessment_agent import DietaryAssessmentAgent
+from .dietary_assessment_agent import ConversationalDietaryAssessmentAgent
 from .user_agent import UserAgent
 from .eligibility_agent import EligibilityAgent
 import os
@@ -16,7 +16,7 @@ class PrimaryAssistant(BaseAgent):
 
     def __init__(self):
         super().__init__()
-        self.diet_agent = DietaryAssessmentAgent()
+        self.diet_agent = ConversationalDietaryAssessmentAgent()  # ⬅️ New conversational diet agent
         self.user_agent = UserAgent()
         self.eligibility_agent = EligibilityAgent()
 
@@ -26,7 +26,7 @@ class PrimaryAssistant(BaseAgent):
         self.functions = [
             {
                 "name": "start_diet_assessment",
-                "description": "Starts the structured diet screener questionnaire.",
+                "description": "Starts the conversational diet screener questionnaire.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -68,7 +68,7 @@ class PrimaryAssistant(BaseAgent):
         # Check if user is mid-session
         current = self.user_sessions.get(user_id)
         if current == "diet":
-            print("🔄 Routing to diet agent")
+            print("🔄 Routing to conversational diet agent")
             response = self.diet_agent.process({"message": user_message, "user_id": user_id})
             if response.get("message") == "Assessment complete":
                 self.user_sessions.pop(user_id, None)
@@ -85,7 +85,6 @@ class PrimaryAssistant(BaseAgent):
 
         # --- Detect positive response to flow suggestion ---
         if self._is_positive_response(user_message):
-            # Assume based on completion status what the YES should trigger
             if not progress["diet_done"]:
                 print("✅ Positive response detected — Starting Diet Assessment")
                 self.user_sessions[user_id] = "diet"
@@ -118,14 +117,12 @@ class PrimaryAssistant(BaseAgent):
         if use_openai:
             return self._handle_openai_fallback(user_message, user_id, progress)
 
-        # --- Fallback if OpenAI is disabled ---
         print("⚠️ Skipping OpenAI (USE_OPENAI is false)")
         return self._format_response(True, "Default reply", {
             "response": "I'm here to assist with diet assessments, eligibility checks, or wellness guidance. How can I help you today?"
         })
 
     def _is_positive_response(self, message: str) -> bool:
-        """Detect positive user responses."""
         message_lower = message.strip().lower()
         return any(kw in message_lower for kw in YES_KEYWORDS)
 
