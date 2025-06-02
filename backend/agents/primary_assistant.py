@@ -55,6 +55,12 @@ class PrimaryAssistant(BaseAgent):
         if not user_id:
             return self._format_response(False, "Missing user ID", {"error": "User ID is required."})
 
+        # Return a default welcome message if the user message is 'start' or empty
+        if user_message.strip().lower() in {"start", ""}:
+            return self._format_response(True, "Welcome", {
+                "response": "👋 Welcome to Wellchemy — a food as medicine platform powered by AI.  We assess your health, prescribe medically tailored meals, connect you to wellness programs, answer any health related questions and help set you on a path to a healthier life.\nReady to get started?"
+            })
+
         if user_id not in self.user_progress:
             self.user_progress[user_id] = {
                 "onboarded": False,
@@ -133,7 +139,7 @@ class PrimaryAssistant(BaseAgent):
 You are the primary AI assistant for Wellchemy.
 Your job is to help users with diet assessments, eligibility checks, and general wellness advice.
 
-Here is the user’s progress:
+Here is the user's progress:
 - Email collected: {"✅" if progress.get("onboarded") or progress.get("skipped_onboarding") else "❌"}
 - Diet Assessment completed: {"✅" if progress.get("diet_done") else "❌"}
 - Eligibility Check completed: {"✅" if progress.get("eligibility_done") else "❌"}
@@ -141,7 +147,7 @@ Here is the user’s progress:
 If the user hasn't completed a Diet Assessment or Eligibility Check, you can suggest it casually after answering their question.
 
 Remember:
-- Always answer the user’s question first.
+- Always answer the user's question first.
 - Then, if appropriate, gently suggest a next step (Diet Assessment or Eligibility Check).
 - Be helpful, professional, and conversational.
             """
