@@ -103,9 +103,10 @@ class ConversationalDietaryAssessmentAgent(BaseAgent):
         final_message = (
             f"\n🌿 Whole & Plant Food Frequency Score: {percent}%\n"
             f"💧 Water & Herbal Beverages Score: {water_score}%\n"
-            f"\nBased on your dietary frequency score of {round(total_score, 1)}, "
-            f"this equates to a **{risk_level}** dietary pattern using Global Diet Quality Score categories.\n"
-            f"\nNow that we know that, we're here to help you make healthier choices!"
+            f"\nThis equates to a **{risk_level}** dietary pattern using the Global Diet Quality Score categories.\n"
+            f"\nCompleting this assessment is a powerful first step toward a healthier you. "
+            f"Take a moment to reflect on your results — small, consistent changes in your diet can make a big difference. "
+            f"We're here to support you every step of the way on your journey to better health!  Let me know what you'd like to do next."
         )
 
         return final_message
@@ -133,7 +134,7 @@ class ConversationalDietaryAssessmentAgent(BaseAgent):
             next_category = self.categories[user_state["current_category"]]
             prompt = (
                 f"Over the past 4 weeks, how often did you consume {next_category}?\n"
-                f"Please answer freely, and I will interpret your answer."
+               
             )
             return self._format_response(True, "Continue conversation", {"response": welcome_message + prompt})
 
@@ -167,7 +168,7 @@ class ConversationalDietaryAssessmentAgent(BaseAgent):
         next_category = self.categories[user_state["current_category"]]
         prompt = (
             f"Over the past 4 weeks, how often did you consume {next_category}?\n"
-            f"Please answer freely, and I will interpret your answer."
+           
         )
 
         return self._format_response(True, "Continue conversation", {"response": prompt})
