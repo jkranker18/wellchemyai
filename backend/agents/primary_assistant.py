@@ -2,7 +2,7 @@ from typing import Dict, Any
 from .base_agent import BaseAgent
 from .dietary_assessment_agent import ConversationalDietaryAssessmentAgent
 from .user_agent import UserAgent
-from .eligibility_agent import EligibilityAgent
+from .conversational_eligibility_agent import ConversationalEligibilityAgent
 import os
 import json
 import re
@@ -18,7 +18,7 @@ class PrimaryAssistant(BaseAgent):
         super().__init__()
         self.diet_agent = ConversationalDietaryAssessmentAgent()  # ⬅️ New conversational diet agent
         self.user_agent = UserAgent()
-        self.eligibility_agent = EligibilityAgent()
+        self.eligibility_agent = ConversationalEligibilityAgent()
 
         self.user_sessions = {}    # user_id -> 'diet', 'eligibility'
         self.user_progress = {}    # user_id -> { "onboarded": False, "skipped_onboarding": False, "diet_done": False, "eligibility_done": False }
