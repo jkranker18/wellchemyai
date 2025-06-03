@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 const API_BASE_URL = 'http://localhost:5000';
 
 export interface ChatResponse {
@@ -10,36 +12,28 @@ export interface ChatResponse {
 }
 
 export const api = {
-  async chat(message: string, user_id: string = "default"): Promise<ChatResponse> {
-    const response = await fetch(`${API_BASE_URL}/chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ message, user_id }),
+  async chat(message: string, userId?: string): Promise<ChatResponse> {
+    const response = await axios.post<ChatResponse>(`${API_BASE_URL}/chat`, {
+      message: message,
+      user_id: userId
     });
-    return response.json();
+    return response.data;
   },
 
   async user(message: string, context?: any): Promise<ChatResponse> {
-    const response = await fetch(`${API_BASE_URL}/user`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ message, context }),
+    const response = await axios.post<ChatResponse>(`${API_BASE_URL}/user`, {
+      message,
+      context
     });
-    return response.json();
+    return response.data;
   },
 
   async dietary(message: string, dietaryData?: any, healthContext?: any): Promise<ChatResponse> {
-    const response = await fetch(`${API_BASE_URL}/dietary`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ message, dietary_data: dietaryData, health_context: healthContext }),
+    const response = await axios.post<ChatResponse>(`${API_BASE_URL}/dietary`, {
+      message,
+      dietary_data: dietaryData,
+      health_context: healthContext
     });
-    return response.json();
+    return response.data;
   },
 }; 
