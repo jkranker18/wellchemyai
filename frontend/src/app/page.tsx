@@ -145,9 +145,31 @@ const LeftRail = () => (
           </a>
         </li>
       </ul>
+
+      <div className="mt-8">
+        <WellnessTipCard />
+      </div>
     </nav>
   </div>
 );
+
+const WellnessTipCard = () => {
+  const [tip] = useState("Stay hydrated! Aim to drink at least 8 glasses of water daily for optimal health and energy levels.");
+
+  return (
+    <div className="bg-white/80 backdrop-blur-md border border-[#e6d2b3]/40 rounded-xl p-4 shadow-md">
+      <div className="flex items-start gap-3">
+        <Sparkles className="w-5 h-5 text-[#2A6657] mt-1" />
+        <div className="flex-1">
+          <h3 className="font-medium text-[#17322a] mb-2">Daily Wellness Tip</h3>
+          <p className="text-sm text-[#17322a]/80">
+            {tip}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ChatArea = ({ messages, onSendMessage, inputText, setInputText, handleSubmit }: any) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -162,7 +184,7 @@ const ChatArea = ({ messages, onSendMessage, inputText, setInputText, handleSubm
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-[#f0f9f0] via-white to-[#f0f9f0] relative">
-      <div className="flex-1 min-h-0 pb-[80px]">
+      <div className="flex-1 min-h-0 pb-[100px]">
         <ScrollArea className="h-full">
           <div className="p-6">
             <div className="max-w-xl mx-auto space-y-4 sm:space-y-6">
@@ -181,6 +203,7 @@ const ChatArea = ({ messages, onSendMessage, inputText, setInputText, handleSubm
         </ScrollArea>
       </div>
 
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-b from-transparent to-[#f0f9f0] h-[100px] pointer-events-none" />
       <form onSubmit={handleSubmit} className="fixed bottom-[60px] left-0 right-0 xl:left-[25%] p-4 border-t border-[#e6d2b3]/30 bg-white/90 backdrop-blur-md z-30">
         <div className="max-w-xl mx-auto">
           <div className="flex gap-2 sm:gap-3 items-center">
