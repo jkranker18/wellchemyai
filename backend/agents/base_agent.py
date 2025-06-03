@@ -38,7 +38,7 @@ class BaseAgent(ABC):
         """
         pass
     
-    def _format_response(self, success: bool, message: str, data: Dict[str, Any] = None) -> Dict[str, Any]:
+    def _format_response(self, success: bool, message: str, data: Dict[str, Any] = None, user_id=None) -> Dict[str, Any]:
         """
         Format the agent's response in a consistent way.
         
@@ -46,6 +46,7 @@ class BaseAgent(ABC):
             success: Whether the operation was successful
             message: A message describing the result
             data: Additional data to include in the response
+            user_id: The user ID to include in the response
             
         Returns:
             Formatted response dictionary
@@ -54,8 +55,11 @@ class BaseAgent(ABC):
             "success": success,
             "message": message
         }
-        if data:
-            response["data"] = data
+        if data is None:
+            data = {}
+        if user_id is not None:
+            data["user_id"] = user_id   # Add user_id in all responses!
+        response["data"] = data
         return response
 
     def get_completion(self, messages):

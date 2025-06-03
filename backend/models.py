@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, JSON, func
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, func
 from sqlalchemy.orm import relationship, declarative_base
 
 Base = declarative_base()
@@ -37,10 +37,7 @@ class DietAssessment(Base):
     
     assessment_id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
-    question_scores = Column(JSON, nullable=False)  # e.g., {"Fruit": 5, "Meat": 2}
-    total_score = Column(Float, nullable=False)
-    max_score = Column(Float, nullable=False)
-    percent = Column(Float, nullable=False)
+    results = Column(Text, nullable=False)  # Store JSON as Text in SQLite
     date_taken = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="diet_assessments")
@@ -49,10 +46,7 @@ class DietAssessment(Base):
         return {
             "assessment_id": self.assessment_id,
             "user_id": self.user_id,
-            "question_scores": self.question_scores,
-            "total_score": self.total_score,
-            "max_score": self.max_score,
-            "percent": self.percent,
+            "results": self.results,  # This will be a JSON string
             "date_taken": self.date_taken.isoformat()
         }
 
@@ -84,7 +78,7 @@ class EligibilityAssessment(Base):
 
     assessment_id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
-    answers = Column(JSON, nullable=False)
+    answers = Column(Text, nullable=False)  # Store JSON as Text in SQLite
     date_taken = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="eligibility_assessments") 
