@@ -154,7 +154,7 @@ const LeftRail = () => (
 );
 
 const WellnessTipCard = () => {
-  const [tip] = useState("Stay hydrated! Aim to drink at least 8 glasses of water daily for optimal health and energy levels.");
+  const [tip] = useState("Incorporate leafy greens like spinach, kale, and arugula into your meals! These nutrient powerhouses are rich in vitamins A, C, K, and minerals like iron and calcium. Try adding them to smoothies, salads, or sautéing them as a side dish.");
 
   return (
     <div className="bg-white/80 backdrop-blur-md border border-[#e6d2b3]/40 rounded-xl p-4 shadow-md">
@@ -184,9 +184,9 @@ const ChatArea = ({ messages, onSendMessage, inputText, setInputText, handleSubm
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-[#f0f9f0] via-white to-[#f0f9f0] relative">
-      <div className="flex-1 min-h-0 pb-[100px]">
+      <div className="flex-1 min-h-0">
         <ScrollArea className="h-full">
-          <div className="p-6">
+          <div className="p-6 pb-[220px]">
             <div className="max-w-xl mx-auto space-y-4 sm:space-y-6">
               {messages.map((message: Message) => (
                 <div key={message.id} className={`flex ${message.isUser ? "justify-end" : "justify-start"}`}>
@@ -203,9 +203,10 @@ const ChatArea = ({ messages, onSendMessage, inputText, setInputText, handleSubm
         </ScrollArea>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-b from-transparent to-[#f0f9f0] h-[100px] pointer-events-none" />
-      <form onSubmit={handleSubmit} className="fixed bottom-[60px] left-0 right-0 xl:left-[25%] p-4 border-t border-[#e6d2b3]/30 bg-white/90 backdrop-blur-md z-30">
-        <div className="max-w-xl mx-auto">
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-b from-transparent to-[#f0f9f0] h-[140px] pointer-events-none" />
+      <div className="fixed bottom-[60px] left-0 right-0 xl:left-[25%] h-[80px] bg-[#f0f9f0] z-20" />
+      <form onSubmit={handleSubmit} className="fixed bottom-[60px] left-0 right-0 xl:left-[25%] p-4 border-t border-[#e6d2b3]/30 bg-white/90 backdrop-blur-md z-30 h-[80px] flex items-center">
+        <div className="max-w-xl mx-auto w-full">
           <div className="flex gap-2 sm:gap-3 items-center">
             <input
               type="text"
