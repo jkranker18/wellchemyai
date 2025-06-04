@@ -17,30 +17,12 @@ class ConversationalDietaryAssessmentAgent(BaseAgent):
         self.categories = [
             "Fruits",
             "Vegetables",
-            "Whole Grains",
-            "Legumes",
-            "Nuts",
             "Water",
             "Herbal Beverages",
             "Sugar-sweetened Beverages",
             "Red Meat",
-            "Processed Meat",
-            "Fish",
-            "Dairy",
-            "Added Sugar",
-            "Refined Grains",
-            "Oils",
-            "Fast Food",
-            "Snacks",
-            "Desserts",
-            "Eggs",
-            "Plant-based Dairy Alternatives",
-            "Fermented Foods",
-            "Green Tea",
-            "Coffee",
-            "Alcohol",
-            "Artificial Sweeteners",
-            "Fried Foods"
+            "Dairy"
+            
         ]
 
         self.food_examples = {
@@ -92,7 +74,7 @@ class ConversationalDietaryAssessmentAgent(BaseAgent):
         }
 
         self.beverage_items = {
-            "Water", "Herbal Beverages", "Green Tea", "Coffee", "Alcohol", "Artificial Sweeteners"
+            "Water", "Herbal Beverages", "Green Tea", "Coffee", "Alcohol", "Artificial Sweeteners", "Sugar-sweetened Beverages"
         }
 
     def _create_guest_user(self) -> int:
