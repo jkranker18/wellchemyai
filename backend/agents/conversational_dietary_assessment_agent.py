@@ -83,11 +83,21 @@ class ConversationalDietaryAssessmentAgent(BaseAgent):
             "never": 0
         }
 
+        self.whole_plant_foods = {
+            "Fruits", "Vegetables", "Whole Grains", "Legumes", "Nuts", "Plant-based Dairy Alternatives", "Fermented Foods"
+        }
+
+        self.water_herbal_beverages = {
+            "Water", "Herbal Beverages", "Green Tea"
+        }
+
+        self.beverage_items = {
+            "Water", "Herbal Beverages", "Green Tea", "Coffee", "Alcohol", "Artificial Sweeteners"
+        }
+
     def _create_guest_user(self) -> int:
-        """Create a guest user and return their ID."""
         db = SessionLocal()
         try:
-            print("Creating guest user...")
             guest_user = User(
                 email=f"guest_{uuid.uuid4()}@wellchemy.ai",
                 password_hash="auto-created",
@@ -97,10 +107,8 @@ class ConversationalDietaryAssessmentAgent(BaseAgent):
             db.add(guest_user)
             db.commit()
             db.refresh(guest_user)
-            print(f"Guest user created with ID: {guest_user.user_id}")
             return guest_user.user_id
         except Exception as e:
-            print(f"Error creating guest user: {str(e)}\n{traceback.format_exc()}")
             db.rollback()
             raise
         finally:
@@ -116,7 +124,6 @@ class ConversationalDietaryAssessmentAgent(BaseAgent):
             user_id = int(user_id)
 
         if user_id not in self.state:
-            # Initialize state
             self.state[user_id] = {
                 "collecting": True,
                 "current_category_index": 0,
@@ -127,10 +134,8 @@ class ConversationalDietaryAssessmentAgent(BaseAgent):
 
         if session["collecting"]:
             if session["current_category_index"] == 0 and message == "":
-                # First time: ask about the first category
                 return self._ask_next_category(user_id)
 
-            # Save the user's response
             current_category = self.categories[session["current_category_index"]]
             estimated_frequency = self._estimate_frequency(message)
             session["answers"][current_category] = estimated_frequency
@@ -138,39 +143,30 @@ class ConversationalDietaryAssessmentAgent(BaseAgent):
             session["current_category_index"] += 1
 
             if session["current_category_index"] >= len(self.categories):
-                # Done!
                 session["collecting"] = False
                 return self._save_and_finish(user_id, session["answers"])
 
-            # Ask about the next category
             return self._ask_next_category(user_id)
 
         return self._format_response(False, "No active session.")
 
     def _estimate_frequency(self, user_response: str) -> int:
-        """Estimate frequency based on user's response."""
         for key_phrase, frequency in self.response_map.items():
             if key_phrase in user_response:
                 return frequency
 
-        # Default fallback if no keyword matched
         try:
-            # Maybe the user typed a number
             number = int(user_response)
             return max(0, min(7, number))
         except:
-            # If we can’t parse anything, assume occasional (3)
             return 3
 
     def _ask_next_category(self, user_id: str) -> Dict[str, Any]:
         session = self.state[user_id]
         current_category = self.categories[session["current_category_index"]]
-        print(f"➡️ Asking about category index: {session['current_category_index']} — {current_category}")
-
         example_text = self.food_examples.get(current_category, "")
 
         if session["current_category_index"] == 0:
-            # First message: Full context and polite intro
             system_prompt = """
 You are a friendly and professional diet assessment assistant for Wellchemy.
 
@@ -187,7 +183,6 @@ Hi there! Could you tell me about how many times in a week you usually enjoy **{
 Remember, there's no pressure — answers like "most days", "occasionally", or a number like 3 are perfectly fine!
 """.strip()
         else:
-            # Subsequent questions: Short, no reintroductions, no instructions, food examples added
             system_prompt = """
 You are a friendly diet assessment assistant for Wellchemy.
 
@@ -224,14 +219,11 @@ How often per week do you consume **{current_category}** {example_text}?
             }, user_id)
 
         except Exception as e:
-            print(f"Error generating next question: {e}")
             return self._format_response(False, "Error", {"error": str(e)}, user_id)
 
-    def _save_and_finish(self, user_id: str, answers: Dict[str, int]) -> Dict[str, Any]:
-        """Save collected diet data and finish session."""
+    def _save_and_finish(self, user_id: int, answers: Dict[str, int]) -> Dict[str, Any]:
         db = SessionLocal()
         try:
-            print(f"Saving diet assessment for user {user_id}")
             results = self._calculate_scores(answers)
             record = DietAssessment(
                 user_id=user_id,
@@ -240,9 +232,7 @@ How often per week do you consume **{current_category}** {example_text}?
             )
             db.add(record)
             db.commit()
-            print("Diet assessment saved successfully")
         except Exception as e:
-            print(f"Error saving diet assessment: {str(e)}\n{traceback.format_exc()}")
             db.rollback()
             raise
         finally:
@@ -257,29 +247,30 @@ How often per week do you consume **{current_category}** {example_text}?
         })
 
     def _calculate_scores(self, answers: Dict[str, int]) -> Dict[str, Any]:
-        """Calculate sub-scores and total score."""
-        wpffs = sum(answers.get(food, 0) for food in self.categories if food in self.food_examples and "Fruits" in food or "Vegetables" in food or "Whole Grains" in food or "Legumes" in food or "Nuts" in food or "Plant-based Dairy Alternatives" in food or "Fermented Foods" in food)
-        whbs = sum(answers.get(drink, 0) for drink in self.categories if drink in self.food_examples and "Water" in drink or "Herbal Beverages" in drink or "Green Tea" in drink)
-        total_score = sum(answers.values())
+        plant_food_total = sum(answers.get(k, 0) for k in self.whole_plant_foods)
+        food_items_total = sum(v for k, v in answers.items() if k not in self.beverage_items)
+
+        water_herbal_total = sum(answers.get(k, 0) for k in self.water_herbal_beverages)
+        beverage_total = sum(answers.get(k, 0) for k in self.beverage_items)
+
+        wpffs = round((plant_food_total / food_items_total) * 100, 1) if food_items_total else 0
+        whbs = round((water_herbal_total / beverage_total) * 100, 1) if beverage_total else 0
 
         return {
             "categories": answers,
             "WholePlantFoodScore": wpffs,
-            "WaterHerbalBeverageScore": whbs,
-            "TotalDietQualityScore": total_score
+            "WaterHerbalBeverageScore": whbs
         }
 
     def _build_summary(self, collected_data: Dict[str, Any]) -> str:
         wpffs = collected_data.get("WholePlantFoodScore", 0)
         whbs = collected_data.get("WaterHerbalBeverageScore", 0)
-        total_score = collected_data.get("TotalDietQualityScore", 0)
 
-        max_possible_score = len(self.categories) * 7
-        gdqs_equivalent = (total_score / max_possible_score) * 40 if max_possible_score else 0
+        avg_score = (wpffs + whbs) / 2
 
-        if gdqs_equivalent < 15:
+        if avg_score < 50:
             risk_level = "High Risk"
-        elif gdqs_equivalent < 23:
+        elif avg_score < 75:
             risk_level = "Moderate Risk"
         else:
             risk_level = "Low Risk"
@@ -287,8 +278,8 @@ How often per week do you consume **{current_category}** {example_text}?
         return (
             f"✅ Thanks for completing the diet assessment!\n"
             f"Here's your estimated diet quality summary:\n\n"
-            f"🥗 Whole & Plant Food Frequency Score: {wpffs}\n"
-            f"💧 Water & Herbal Beverages Score: {whbs}\n"
+            f"🥗 Whole & Plant Food Frequency Score: {wpffs}%\n"
+            f"💧 Water & Herbal Beverages Score: {whbs}%\n"
             f"📊 Diet Risk Level: **{risk_level}**\n\n"
             f"Keep up the great work! If you'd like tips on improving your diet, just let me know. 🌟"
         )
