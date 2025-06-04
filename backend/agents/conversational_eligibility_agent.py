@@ -1,5 +1,6 @@
 import os
 import random
+import json
 from typing import Dict, Any
 from .base_agent import BaseAgent
 from db_connection import SessionLocal
@@ -7,7 +8,6 @@ from models import EligibilityAssessment, User
 from datetime import datetime
 import traceback
 import uuid
-import json
 
 class ConversationalEligibilityAgent(BaseAgent):
     def __init__(self):
@@ -53,7 +53,6 @@ class ConversationalEligibilityAgent(BaseAgent):
         ]
 
     def _create_guest_user(self) -> int:
-        """Create a guest user and return their ID."""
         db = SessionLocal()
         try:
             print("Creating guest user...")
@@ -94,18 +93,16 @@ class ConversationalEligibilityAgent(BaseAgent):
         stage = user_state["stage"]
         index = user_state["index"]
 
-        # Clarification detection
         if any(kw in message.lower() for kw in ["example", "like what", "what is", "explain", "what's that", "huh", "help"]):
-            if stage == "unbranch" and index == 0:  # chronic conditions
+            if stage == "unbranch" and index == 0:
                 return self._format_response(True, "Clarification", {
                     "response": f"Sure! Here's a helpful resource on chronic conditions: {self.chronic_conditions_url}"
                 })
-            if stage == "unbranch" and index == 1:  # dietary restrictions
+            if stage == "unbranch" and index == 1:
                 return self._format_response(True, "Clarification", {
                     "response": f"Sure! Here's a helpful resource on common dietary restrictions: {self.dietary_restrictions_url}"
                 })
 
-        # Save previous answer
         if stage == "initial":
             if index < len(self.questions):
                 user_state["answers"][self.questions[index]["key"]] = message
@@ -113,7 +110,6 @@ class ConversationalEligibilityAgent(BaseAgent):
                 user_state["index"] = index
 
                 if index == len(self.questions):
-                    # Branch detection after insurance provider
                     provider = user_state["answers"]["insurance_provider"].strip().lower()
                     if provider in self.branch_questions:
                         user_state["stage"] = "branch"
@@ -151,7 +147,6 @@ class ConversationalEligibilityAgent(BaseAgent):
         return self._format_response(False, "No active session.")
 
     def _next_question(self, user_id: str) -> Dict[str, Any]:
-        """Ask the next question based on the current stage and index."""
         user_state = self.state[user_id]
         stage = user_state["stage"]
         index = user_state["index"]
@@ -167,7 +162,6 @@ class ConversationalEligibilityAgent(BaseAgent):
         else:
             return self._format_response(False, "No questions left.")
 
-        # 🎲 Randomly pick a style
         style_instruction = random.choice(self.instruction_styles)
 
         system_prompt = f"""
@@ -182,7 +176,6 @@ Here is the next question you must ask:
 "{question}"
 """.strip()
 
-        # Call OpenAI to rephrase the next question
         try:
             response = self.client.chat.completions.create(
                 model="gpt-4",
@@ -202,37 +195,13 @@ Here is the next question you must ask:
             print(f"Error generating next question: {e}")
             return self._format_response(False, "Error", {"error": str(e)})
 
-    def _format_answers(self, answers: Dict[str, Any]) -> str:
-        """Nicely format the answers for display."""
-        key_labels = {
-            "insurance_provider": "Insurance Provider",
-            "abc_member_id": "ABC Member ID",
-            "hospital_visits": "Hospital Visits (Past 6 Months)",
-            "florida_blue_member_id": "Florida Blue Member ID",
-            "medications_per_day": "Medications per Day",
-            "chronic_conditions": "Chronic Conditions",
-            "dietary_restrictions": "Dietary Restrictions",
-            "delivery_address": "Delivery Address"
-        }
-
-        lines = []
-        for key in key_labels:
-            if key in answers:
-                value = answers[key]
-                lines.append(f"{key_labels[key]}: {value}")
-
-        return "\n\n".join(lines)
-
     def _save_and_finish(self, user_id: str, answers: Dict[str, Any]) -> Dict[str, Any]:
-        """Save collected eligibility data and finish session."""
         db = SessionLocal()
         try:
             print(f"Saving eligibility assessment for user {user_id}")
-            import json  # Make sure you have this at the top if not already
-
             record = EligibilityAssessment(
                 user_id=user_id,
-                answers=json.dumps(answers),  # ✅ serialize the dict to JSON string
+                answers=json.dumps(answers),
                 date_taken=datetime.utcnow()
             )
             db.add(record)
@@ -246,12 +215,44 @@ Here is the next question you must ask:
             db.close()
 
         del self.state[user_id]
+
         formatted_answers = self._format_answers(answers)
+        health_tip = self._generate_health_tip()
+
+        final_message = (
+            f"Thanks! We've recorded your information and will contact your provider for verification.\n"
+            f"Here's what you told us:\n\n"
+            f"{formatted_answers}\n\n"
+            f"✅ We'll let you know as soon as you're approved. In the meantime, feel free to ask me anything about your diet, wellness, or health — I'm here to help!\n\n"
+            f"🌟 **Health Tip:** {health_tip}"
+        )
+
         return self._format_response(True, "Eligibility assessment complete", {
-            "response": (
-                f"Thanks! We've recorded your information and will contact your provider for verification.\n"
-                f"Here's what you told us:\n\n"
-                f"{formatted_answers}\n\n"
-                f"✅ We'll let you know as soon as you're approved (this could take a few days). In the meantime, feel free to ask me anything about your diet, wellness, or health — I'm here to help!"
-            )
+            "response": final_message
         })
+
+    def _generate_health_tip(self) -> str:
+        try:
+            prompt = (
+                "Give me one short and practical health tip. It can be about healthy eating, "
+                "staying active, or supporting mental wellness. Keep it to 1-2 sentences. "
+                "Make it friendly and motivating."
+            )
+
+            response = self.client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are a wellness expert providing health advice."},
+                    {"role": "user", "content": prompt}
+                ],
+                timeout=10
+            )
+
+            return response.choices[0].message.content.strip()
+
+        except Exception as e:
+            print(f"⚠️ Error generating health tip: {e}")
+            return "🌟 Here's a quick tip: Stay hydrated and move your body daily for better health!"
+
+    def _format_answers(self, answers: Dict[str, Any]) -> str:
+        return "\n".join(f"**{key.replace('_', ' ').title()}:** {value}" for key, value in answers.items())
