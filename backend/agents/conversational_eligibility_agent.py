@@ -228,9 +228,11 @@ Here is the next question you must ask:
         db = SessionLocal()
         try:
             print(f"Saving eligibility assessment for user {user_id}")
+            import json  # Make sure you have this at the top if not already
+
             record = EligibilityAssessment(
                 user_id=user_id,
-                answers=answers,
+                answers=json.dumps(answers),  # ✅ serialize the dict to JSON string
                 date_taken=datetime.utcnow()
             )
             db.add(record)
@@ -250,6 +252,6 @@ Here is the next question you must ask:
                 f"Thanks! We've recorded your information and will contact your provider for verification.\n"
                 f"Here's what you told us:\n\n"
                 f"{formatted_answers}\n\n"
-                f"✅ We'll let you know as soon as you're approved. In the meantime, feel free to ask me anything about your diet, wellness, or health — I'm here to help!"
+                f"✅ We'll let you know as soon as you're approved (this could take a few days). In the meantime, feel free to ask me anything about your diet, wellness, or health — I'm here to help!"
             )
         })
