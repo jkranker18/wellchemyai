@@ -240,16 +240,26 @@ Keep it light, conversational, and supportive.
         }
 
     def _build_summary(self, collected_data: Dict[str, Any]) -> str:
-        """Build a nice summary message for the user."""
-        wpffs = collected_data.get("WholePlantFoodScore", "N/A")
-        whbs = collected_data.get("WaterHerbalBeverageScore", "N/A")
-        total_score = collected_data.get("TotalDietQualityScore", "N/A")
+        wpffs = collected_data.get("WholePlantFoodScore", 0)
+        whbs = collected_data.get("WaterHerbalBeverageScore", 0)
+        total_score = collected_data.get("TotalDietQualityScore", 0)
+
+        # Calculate GDQS equivalent (scale total score to 0–40)
+        max_possible_score = len(self.categories) * 7  # 7 days/week max
+        gdqs_equivalent = (total_score / max_possible_score) * 40 if max_possible_score else 0
+
+        if gdqs_equivalent < 15:
+            risk_level = "High Risk"
+        elif gdqs_equivalent < 23:
+            risk_level = "Moderate Risk"
+        else:
+            risk_level = "Low Risk"
 
         return (
             f"✅ Thanks for completing the diet assessment!\n"
             f"Here's your estimated diet quality summary:\n\n"
             f"🥗 Whole & Plant Food Frequency Score: {wpffs}\n"
             f"💧 Water & Herbal Beverages Score: {whbs}\n"
-            f"📊 Total Diet Quality Score: {total_score}\n\n"
+            f"📊 Diet Risk Level: **{risk_level}**\n\n"
             f"Keep up the great work! If you'd like tips on improving your diet, just let me know. 🌟"
         )
