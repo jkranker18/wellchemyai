@@ -302,16 +302,24 @@ How often per week do you eat **{current_category}**{example_clause}?
         }
 
     def _build_summary(self, collected_data: Dict[str, Any]) -> str:
-        """Build a nice summary message for the user."""
-        wpffs = collected_data.get("WholePlantFoodScore", "N/A")
-        whbs = collected_data.get("WaterHerbalBeverageScore", "N/A")
-        total_score = collected_data.get("TotalDietQualityScore", "N/A")
+        wpffs = collected_data.get("WholePlantFoodScore", 0)
+        whbs = collected_data.get("WaterHerbalBeverageScore", 0)
+
+        avg_score = (wpffs + whbs) / 2
+
+        if avg_score < 50:
+            risk_level = "High Risk"
+        elif avg_score < 75:
+            risk_level = "Moderate Risk"
+        else:
+            risk_level = "Low Risk"
 
         return (
             f"✅ Thanks for completing the diet assessment!\n"
             f"Here's your estimated diet quality summary:\n\n"
-            f"🥗 Whole & Plant Food Frequency Score: {wpffs}\n"
-            f"💧 Water & Herbal Beverages Score: {whbs}\n"
-            f"📊 Total Diet Quality Score: {total_score}\n\n"
+            f"🥗 Whole & Plant Food Frequency Score: {wpffs}%\n"
+            f"💧 Water & Herbal Beverages Score: {whbs}%\n"
+            f"📊 Diet Risk Level: **{risk_level}**\n\n"
             f"Keep up the great work! If you'd like tips on improving your diet, just let me know. 🌟"
+            
         )
