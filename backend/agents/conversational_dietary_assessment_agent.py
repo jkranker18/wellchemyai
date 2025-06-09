@@ -43,6 +43,35 @@ class ConversationalDietaryAssessmentAgent(BaseAgent):
             "Fried Foods"
         ]
 
+        self.food_examples = {
+            "Fruits": "(like apples, berries, or citrus)",
+            "Vegetables": "(like leafy greens, carrots, or broccoli)",
+            "Whole Grains": "(like brown rice, quinoa, or whole wheat bread)",
+            "Legumes": "(like beans, lentils, or chickpeas)",
+            "Nuts": "(like almonds, walnuts, or cashews)",
+            "Water": "(plain water or infused water)",
+            "Herbal Beverages": "(like chamomile or mint tea)",
+            "Sugar-sweetened Beverages": "(like soda or sweetened juices)",
+            "Red Meat": "(like beef or lamb)",
+            "Processed Meat": "(like deli meats or hot dogs)",
+            "Fish": "(like salmon, tuna, or other seafood)",
+            "Dairy": "(like milk, cheese, or yogurt)",
+            "Added Sugar": "(like table sugar, honey, or syrups)",
+            "Refined Grains": "(like white rice or white bread)",
+            "Oils": "(like olive oil or vegetable oil)",
+            "Fast Food": "(like burgers, pizza, or fried chicken)",
+            "Snacks": "(like chips, crackers, or granola bars)",
+            "Desserts": "(like cookies, cakes, or ice cream)",
+            "Eggs": "(any type of eggs)",
+            "Plant-based Dairy Alternatives": "(like almond milk or soy yogurt)",
+            "Fermented Foods": "(like kimchi, sauerkraut, or kombucha)",
+            "Green Tea": "(any type of green tea)",
+            "Coffee": "(any type of coffee)",
+            "Alcohol": "(like beer, wine, or spirits)",
+            "Artificial Sweeteners": "(like aspartame or stevia)",
+            "Fried Foods": "(like french fries or fried chicken)"
+        }
+
         self.whole_plant_foods = {
             "Fruits", "Vegetables", "Whole Grains", "Legumes", "Nuts", "Plant-based Dairy Alternatives", "Fermented Foods"
         }
@@ -160,30 +189,63 @@ class ConversationalDietaryAssessmentAgent(BaseAgent):
             return 3
 
     def _ask_next_category(self, user_id: str) -> Dict[str, Any]:
-        """Prompt the user for the next category."""
         session = self.state[user_id]
         current_category = self.categories[session["current_category_index"]]
-        print(f"➡️ Asking about category index: {session['current_category_index']} — {current_category}")  # Debug print
+        example_text = self.food_examples.get(current_category, "")  # Pull examples here!
 
-        system_prompt = f"""
+        if session["current_category_index"] == 0:
+            # First question — longer, friendly intro
+            system_prompt = """
 You are a friendly and professional diet assessment assistant for Wellchemy.
 
-Please ask the user how many times per week they typically consume the following category:
+For the first question:
+- Welcome the user warmly.
+- Explain that this is a quick diet assessment that takes 3-5 minutes.
+- Explain that they can answer with terms like "daily", "never", "occasionally", or a number 0-7.
+- Make it clear there's no right or wrong answer.
+- Be supportive and non-judgmental.
+""".strip()
 
-**{current_category}**
+            user_prompt = f"""
+Hi there! Could you tell me about how many times in a week you usually enjoy **{current_category}** {example_text}? 
+Remember, there's no pressure — answers like "most days", "occasionally", or a number like 3 are perfectly fine!
+""".strip()
 
-Accept casual answers like "every day", "most days", "occasionally", "rarely", "never", or a number between 0-7.
+        else:
+            # Follow-up questions — short and polite with examples
+            system_prompt = """
+You are a friendly diet assessment assistant for Wellchemy.
 
-Ask about only **this** category, no repeats.
+For follow-up questions:
+- Be brief and polite.
+- Do NOT reintroduce yourself.
+- Do NOT re-explain how to answer.
+- Simply ask how often they consume the food category.
+- Provide a brief food example.
+- Keep it friendly and efficient.
 
-Keep it light, conversational, and supportive.
+Examples:
+- "How often per week do you eat [food]?"
+- "On average, how many times a week do you eat [food]?"
+- "Roughly how often per week do you include [food] in your diet?"
+""".strip()
+
+            # Make sure example text is nicely inserted only if it exists
+            if example_text:
+                example_clause = f" (e.g., {example_text.strip('e.g., ').strip()})"
+            else:
+                example_clause = ""
+
+            user_prompt = f"""
+How often per week do you eat **{current_category}**{example_clause}?
 """.strip()
 
         try:
             response = self.client.chat.completions.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": system_prompt}
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
                 ]
             )
 
