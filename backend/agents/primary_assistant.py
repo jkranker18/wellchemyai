@@ -3,6 +3,7 @@ from .base_agent import BaseAgent
 from .conversational_dietary_assessment_agent import ConversationalDietaryAssessmentAgent
 from .user_agent import UserAgent
 from .conversational_eligibility_agent import ConversationalEligibilityAgent
+from .prescription_agent import PrescriptionAgent
 import os
 import json
 import re
@@ -14,11 +15,59 @@ YES_KEYWORDS = ["yes", "ok", "sure", "yeah", "yep", "let's go", "sounds good", "
 class PrimaryAssistant(BaseAgent):
     """Primary AI assistant that routes requests to specialized agents as needed, with flow suggestions embedded in AI responses."""
 
-    def __init__(self):
+    def __init__(self, programs=None, inventory=None, chronic_condition_diet_mapping=None):
         super().__init__()
         self.diet_agent = ConversationalDietaryAssessmentAgent()  # ⬅️ New conversational diet agent
         self.user_agent = UserAgent()
         self.eligibility_agent = ConversationalEligibilityAgent()
+
+        # Example hardcoded data
+        self.programs = [
+            {
+                "id": "program_001",
+                "name": "Shelf Stable 12 Week Program",
+                "payer": "HealthInsure Co.",
+                "food_type": "Shelf Stable",
+                "quantity_per_delivery": 14,
+                "frequency_days": 7,
+                "duration_weeks": 12
+            }
+        ]
+
+        self.inventory = [
+            {
+                "id": "meal_001",
+                "name": "Quinoa Salad Bowl",
+                "ingredients": ["quinoa", "tomatoes", "cucumbers", "olive oil"],
+                "diet_tags": ["vegetarian", "low_sodium", "high_fiber", "dash_diet", "mediterranean_diet"],
+                "food_type": "Shelf Stable",
+                "stock": 100
+            },
+            {
+                "id": "meal_002",
+                "name": "Chicken Stir Fry",
+                "ingredients": ["chicken", "broccoli", "soy sauce"],
+                "diet_tags": ["high_protein", "low_carb", "mediterranean_diet"],
+                "food_type": "Shelf Stable",
+                "stock": 50
+            },
+            {
+                "id": "meal_003",
+                "name": "Lentil Soup",
+                "ingredients": ["lentils", "carrots", "celery"],
+                "diet_tags": ["vegan", "low_sodium", "high_fiber", "dash_diet", "diabetes_friendly"],
+                "food_type": "Shelf Stable",
+                "stock": 80
+            }
+        ]
+
+        self.chronic_condition_diet_mapping = {
+            "Hypertension": ["dash_diet", "low_sodium"],
+            "Diabetes": ["diabetes_friendly", "low_glycemic", "mediterranean_diet"],
+            "Heart Disease": ["mediterranean_diet", "low_sodium"]
+        }
+
+        self.prescription_agent = PrescriptionAgent(self.programs, self.inventory, self.chronic_condition_diet_mapping)
 
         self.user_sessions = {}    # user_id -> 'diet', 'eligibility'
         self.user_progress = {}    # user_id -> { "onboarded": False, "skipped_onboarding": False, "diet_done": False, "eligibility_done": False }
@@ -51,6 +100,35 @@ class PrimaryAssistant(BaseAgent):
     def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
         user_message = data.get("message", "")
         user_id = data.get("user_id", "default")
+
+        if "prescription" in user_message.lower():
+            print("💊 Prescription keyword detected — generating prescription...")
+            # For now, hardcode a sample diet and eligibility assessment
+            diet_assessment = {
+                "vegetarian": True
+            }
+            eligibility_assessment = {
+                "chronic_conditions": ["Hypertension"],
+                "dietary_restrictions": ["shellfish"]
+            }
+            try:
+                orders = self.prescription_agent.generate_prescription(user_id, diet_assessment, eligibility_assessment)
+                # Format the orders nicely
+                response_text = "✅ **Prescription Orders Generated!**\n\n"
+                for i, order in enumerate(orders, 1):
+                    meals_list = ', '.join(order['meals'])
+                    response_text += (
+                        f"📦 **Order {i}**\n"
+                        f"- Delivery Date: **{order['delivery_date']}**\n"
+                        f"- Meals: {meals_list}\n\n"
+                    )
+                return self._format_response(True, "Prescription Generated", {
+                    "response": response_text
+                }, user_id=user_id)
+            except Exception as e:
+                return self._format_response(False, "Error generating prescription", {
+                    "error": str(e)
+                }, user_id=user_id)
 
         # Return a default welcome message if the user message is 'start' or empty
         if user_message.strip().lower() in {"start", ""}:
