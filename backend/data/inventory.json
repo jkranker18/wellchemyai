@@ -1,0 +1,28 @@
+{
+    "meals": [
+        {
+            "id": "med_meal_1",
+            "name": "Mediterranean Grilled Salmon",
+            "description": "Grilled salmon with quinoa and roasted vegetables",
+            "dietary_tags": ["heart_healthy", "diabetes_friendly", "gluten_free"],
+            "nutritional_info": {
+                "calories": 450,
+                "protein": 35,
+                "carbs": 30,
+                "fat": 20
+            }
+        },
+        {
+            "id": "med_meal_2",
+            "name": "Vegetarian Buddha Bowl",
+            "description": "Brown rice bowl with roasted vegetables and tahini dressing",
+            "dietary_tags": ["vegetarian", "vegan", "gluten_free"],
+            "nutritional_info": {
+                "calories": 400,
+                "protein": 15,
+                "carbs": 45,
+                "fat": 18
+            }
+        }
+    ]
+} 

@@ -1,0 +1,22 @@
+{
+    "programs": [
+        {
+            "id": "diabetes_management",
+            "name": "Diabetes Management Program",
+            "description": "A comprehensive program for managing diabetes through diet and lifestyle",
+            "eligibility_criteria": {
+                "conditions": ["Diabetes", "Pre-diabetes"],
+                "age_range": [18, 100]
+            }
+        },
+        {
+            "id": "heart_health",
+            "name": "Heart Health Program",
+            "description": "Program focused on improving cardiovascular health through nutrition",
+            "eligibility_criteria": {
+                "conditions": ["Hypertension", "High Cholesterol", "Heart Disease"],
+                "age_range": [18, 100]
+            }
+        }
+    ]
+} 
