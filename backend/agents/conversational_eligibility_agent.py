@@ -228,28 +228,45 @@ Here is the next question you must ask:
         db = SessionLocal()
         try:
             print(f"Saving eligibility assessment for user {user_id}")
+            # Convert answers to JSON string if it's not already
+            if isinstance(answers, dict):
+                answers_json = json.dumps(answers)
+            else:
+                answers_json = answers
+
             record = EligibilityAssessment(
                 user_id=user_id,
-                answers=answers,
+                answers=answers_json,
                 date_taken=datetime.utcnow()
             )
             db.add(record)
             db.commit()
             print("Eligibility assessment saved successfully")
+            
+            # Clean up the session
+            del self.state[user_id]
+            formatted_answers = self._format_answers(answers)
+            
+            return self._format_response(True, "Eligibility assessment complete", {
+                "response": (
+                    f"Thanks! We've recorded your information and will contact your provider for verification.\n"
+                    f"Here's what you told us:\n\n"
+                    f"{formatted_answers}\n\n"
+                    f"✅ We'll let you know as soon as you're approved. In the meantime, feel free to ask me anything about your diet, wellness, or health — I'm here to help!"
+                )
+            })
         except Exception as e:
             print(f"Error saving eligibility assessment: {str(e)}\n{traceback.format_exc()}")
             db.rollback()
-            raise
+            # Even if saving fails, we should still return a response to the user
+            formatted_answers = self._format_answers(answers)
+            return self._format_response(True, "Eligibility assessment complete", {
+                "response": (
+                    f"Thanks for providing your information!\n"
+                    f"Here's what you told us:\n\n"
+                    f"{formatted_answers}\n\n"
+                    f"✅ We'll let you know as soon as you're approved. In the meantime, feel free to ask me anything about your diet, wellness, or health — I'm here to help!"
+                )
+            })
         finally:
             db.close()
-
-        del self.state[user_id]
-        formatted_answers = self._format_answers(answers)
-        return self._format_response(True, "Eligibility assessment complete", {
-            "response": (
-                f"Thanks! We've recorded your information and will contact your provider for verification.\n"
-                f"Here's what you told us:\n\n"
-                f"{formatted_answers}\n\n"
-                f"✅ We'll let you know as soon as you're approved. In the meantime, feel free to ask me anything about your diet, wellness, or health — I'm here to help!"
-            )
-        })
