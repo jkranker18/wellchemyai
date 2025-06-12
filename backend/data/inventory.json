@@ -1,28 +1,115 @@
-{
-    "meals": [
-        {
-            "id": "med_meal_1",
-            "name": "Mediterranean Grilled Salmon",
-            "description": "Grilled salmon with quinoa and roasted vegetables",
-            "dietary_tags": ["heart_healthy", "diabetes_friendly", "gluten_free"],
-            "nutritional_info": {
-                "calories": 450,
-                "protein": 35,
-                "carbs": 30,
-                "fat": 20
-            }
-        },
-        {
-            "id": "med_meal_2",
-            "name": "Vegetarian Buddha Bowl",
-            "description": "Brown rice bowl with roasted vegetables and tahini dressing",
-            "dietary_tags": ["vegetarian", "vegan", "gluten_free"],
-            "nutritional_info": {
-                "calories": 400,
-                "protein": 15,
-                "carbs": 45,
-                "fat": 18
-            }
-        }
-    ]
-} 
+[
+    {
+      "id": "beef_stew",
+      "name": "Beef Stew",
+      "description": "Juicy, lean beef with diced potatoes, sweet peppers, tomatoes, cabbage, zucchini, chickpeas and carrots in a flavorful sauce.",
+      "ingredients": [
+        "beef",
+        "potatoes",
+        "bell peppers",
+        "tomatoes",
+        "cabbage",
+        "zucchini",
+        "chickpeas",
+        "carrots",
+        "onion",
+        "celery",
+        "corn oil",
+        "tomato paste",
+        "lemon juice",
+        "spices"
+      ],
+      "diet_tags": [
+        "gluten_free",
+        "nut_free",
+        "dairy_free",
+        "egg_free",
+        "low_sodium",
+        "high_protein",
+        "kosher"
+      ],
+      "food_type": "Shelf Stable",
+      "stock": 100
+    },
+    {
+      "id": "hearty_lentil_stew",
+      "name": "Hearty Lentil Stew",
+      "description": "Lentils, chickpeas, mushrooms, potatoes, spinach and sun-dried tomatoes in a rich and satisfying sauce.",
+      "ingredients": [
+        "lentils",
+        "chickpeas",
+        "mushrooms",
+        "potatoes",
+        "spinach",
+        "sun-dried tomatoes",
+        "onion",
+        "celery",
+        "spices"
+      ],
+      "diet_tags": [
+        "gluten_free",
+        "nut_free",
+        "dairy_free",
+        "vegan",
+        "vegetarian",
+        "egg_free",
+        "low_sodium",
+        "high_fiber",
+        "kosher"
+      ],
+      "food_type": "Shelf Stable",
+      "stock": 100
+    },
+    {
+      "id": "vegetarian_stew",
+      "name": "Vegetarian Stew",
+      "description": "Hearty stew with vegetables, potatoes, barley, lentils and sunflower kernels.",
+      "ingredients": [
+        "lentils",
+        "corn",
+        "potatoes",
+        "sunflower kernels",
+        "barley",
+        "bell peppers",
+        "tomatoes",
+        "onion",
+        "celery",
+        "spices"
+      ],
+      "diet_tags": [
+        "gluten_free",
+        "nut_free",
+        "dairy_free",
+        "vegan",
+        "vegetarian",
+        "egg_free",
+        "high_fiber",
+        "kosher"
+      ],
+      "food_type": "Shelf Stable",
+      "stock": 100
+    },
+    {
+      "id": "mushroom_stroganoff",
+      "name": "Mushroom Stroganoff",
+      "description": "Rotini pasta with mushrooms in a creamy cheese and sour cream sauce.",
+      "ingredients": [
+        "mushrooms",
+        "rotini pasta",
+        "cheese",
+        "sour cream",
+        "spinach",
+        "onion",
+        "garlic",
+        "spices"
+      ],
+      "diet_tags": [
+        "vegetarian",
+        "nut_free",
+        "kosher",
+        "high_protein"
+      ],
+      "food_type": "Shelf Stable",
+      "stock": 100
+    }
+  ]

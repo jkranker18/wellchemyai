@@ -15,59 +15,25 @@ YES_KEYWORDS = ["yes", "ok", "sure", "yeah", "yep", "let's go", "sounds good", "
 class PrimaryAssistant(BaseAgent):
     """Primary AI assistant that routes requests to specialized agents as needed, with flow suggestions embedded in AI responses."""
 
-    def __init__(self, programs=None, inventory=None, chronic_condition_diet_mapping=None):
+    def __init__(self):
         super().__init__()
-        self.diet_agent = ConversationalDietaryAssessmentAgent()  # ⬅️ New conversational diet agent
-        self.user_agent = UserAgent()
+        
+        # Load data files from the data directory
+        data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
+        
+        # Load programs
+        with open(os.path.join(data_dir, "programs.json")) as f:
+            self.programs = json.load(f)
+            
+        # Load chronic condition mapping
+        with open(os.path.join(data_dir, "chronic_condition_diet_mapping.json")) as f:
+            self.chronic_condition_diet_mapping = json.load(f)
+            
+        # Initialize agents
+        self.dietary_assessment_agent = ConversationalDietaryAssessmentAgent()
         self.eligibility_agent = ConversationalEligibilityAgent()
-
-        # Example hardcoded data
-        self.programs = [
-            {
-                "id": "program_001",
-                "name": "Shelf Stable 12 Week Program",
-                "payer": "HealthInsure Co.",
-                "food_type": "Shelf Stable",
-                "quantity_per_delivery": 14,
-                "frequency_days": 7,
-                "duration_weeks": 12
-            }
-        ]
-
-        self.inventory = [
-            {
-                "id": "meal_001",
-                "name": "Quinoa Salad Bowl",
-                "ingredients": ["quinoa", "tomatoes", "cucumbers", "olive oil"],
-                "diet_tags": ["vegetarian", "low_sodium", "high_fiber", "dash_diet", "mediterranean_diet"],
-                "food_type": "Shelf Stable",
-                "stock": 100
-            },
-            {
-                "id": "meal_002",
-                "name": "Chicken Stir Fry",
-                "ingredients": ["chicken", "broccoli", "soy sauce"],
-                "diet_tags": ["high_protein", "low_carb", "mediterranean_diet"],
-                "food_type": "Shelf Stable",
-                "stock": 50
-            },
-            {
-                "id": "meal_003",
-                "name": "Lentil Soup",
-                "ingredients": ["lentils", "carrots", "celery"],
-                "diet_tags": ["vegan", "low_sodium", "high_fiber", "dash_diet", "diabetes_friendly"],
-                "food_type": "Shelf Stable",
-                "stock": 80
-            }
-        ]
-
-        self.chronic_condition_diet_mapping = {
-            "Hypertension": ["dash_diet", "low_sodium"],
-            "Diabetes": ["diabetes_friendly", "low_glycemic", "mediterranean_diet"],
-            "Heart Disease": ["mediterranean_diet", "low_sodium"]
-        }
-
-        self.prescription_agent = PrescriptionAgent(self.programs, self.inventory, self.chronic_condition_diet_mapping)
+        self.prescription_agent = PrescriptionAgent(self.programs, self.chronic_condition_diet_mapping)
+        self.user_agent = UserAgent()
 
         self.user_sessions = {}    # user_id -> 'diet', 'eligibility'
         self.user_progress = {}    # user_id -> { "onboarded": False, "skipped_onboarding": False, "diet_done": False, "eligibility_done": False }
@@ -158,7 +124,7 @@ class PrimaryAssistant(BaseAgent):
         current = self.user_sessions.get(user_id)
         if current == "diet":
             print("🔄 Routing to conversational diet agent")
-            response = self.diet_agent.process({"message": user_message, "user_id": user_id})
+            response = self.dietary_assessment_agent.process({"message": user_message, "user_id": user_id})
             if response.get("success") and response.get("message") == "Assessment complete":
                 self.user_sessions.pop(user_id, None)
                 self.user_progress[user_id]["diet_done"] = True
@@ -177,7 +143,7 @@ class PrimaryAssistant(BaseAgent):
             if not progress["diet_done"]:
                 print("✅ Positive response detected — Starting Diet Assessment")
                 self.user_sessions[user_id] = "diet"
-                return self.diet_agent.process({"message": "", "user_id": user_id})
+                return self.dietary_assessment_agent.process({"message": "", "user_id": user_id})
             if not progress["eligibility_done"]:
                 print("✅ Positive response detected — Starting Eligibility Check")
                 self.user_sessions[user_id] = "eligibility"
@@ -254,7 +220,7 @@ Remember:
                 if function_name == "start_diet_assessment":
                     print("✅ Starting diet assessment via function call")
                     self.user_sessions[called_user_id] = "diet"
-                    return self.diet_agent.process({"message": "", "user_id": called_user_id})
+                    return self.dietary_assessment_agent.process({"message": "", "user_id": called_user_id})
 
                 elif function_name == "check_eligibility":
                     print("✅ Starting eligibility check via function call")

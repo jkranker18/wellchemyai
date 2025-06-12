@@ -1,11 +1,48 @@
+import os
+import json
 import uuid
 from datetime import datetime, timedelta
+from typing import Dict, Any, List
+from .base_agent import BaseAgent
 
-class PrescriptionAgent:
-    def __init__(self, programs, inventory, chronic_condition_diet_mapping):
+class PrescriptionAgent(BaseAgent):
+    def __init__(self, programs: Dict[str, Any], chronic_condition_diet_mapping: Dict[str, Any]):
+        super().__init__()
         self.programs = programs
-        self.inventory = inventory
         self.chronic_condition_diet_mapping = chronic_condition_diet_mapping
+        
+        # Load inventory data from the data directory
+        data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
+        with open(os.path.join(data_dir, "inventory.json")) as f:
+            self.inventory = json.load(f)
+
+    def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process prescription-related requests."""
+        try:
+            user_id = input_data.get("user_id")
+            diet_assessment = input_data.get("diet_assessment", {})
+            eligibility_assessment = input_data.get("eligibility_assessment", {})
+            
+            orders = self.generate_prescription(user_id, diet_assessment, eligibility_assessment)
+            
+            # Format the orders nicely
+            response_text = "✅ **Prescription Orders Generated!**\n\n"
+            for i, order in enumerate(orders, 1):
+                meals_list = ', '.join(order['meals'])
+                response_text += (
+                    f"📦 **Order {i}**\n"
+                    f"- Delivery Date: **{order['delivery_date']}**\n"
+                    f"- Meals: {meals_list}\n\n"
+                )
+            
+            return self._format_response(True, "Prescription Generated", {
+                "response": response_text
+            })
+            
+        except Exception as e:
+            return self._format_response(False, "Error generating prescription", {
+                "error": str(e)
+            })
 
     def generate_prescription(self, user_id, diet_assessment, eligibility_assessment):
         program = self.match_program(eligibility_assessment)
@@ -22,9 +59,11 @@ class PrescriptionAgent:
         return orders
 
     def match_program(self, eligibility_assessment):
-        # You could match by payer or other criteria — simplifying here
+        payer = eligibility_assessment.get("insurance_provider", "").lower()
         for program in self.programs:
-            return program  # for now, just return the first program
+            if "payer" in program and payer in program["payer"].lower():
+                return program
+        print(f"❌ No program found for payer: {payer}")
         return None
 
     def filter_inventory(self, program, diet_assessment, eligibility_assessment):
@@ -35,11 +74,11 @@ class PrescriptionAgent:
         recommended_tags = set()
         for condition in eligibility_assessment.get("chronic_conditions", []):
             recommended_tags.update(self.chronic_condition_diet_mapping.get(condition, []))
+
         available_meals = self.filter_diet_tags(available_meals, recommended_tags)
 
         available_meals = self.filter_preferences(available_meals, diet_assessment)
 
-        # Prioritize meals with more stock
         available_meals.sort(key=lambda meal: -meal["stock"])
 
         return available_meals
